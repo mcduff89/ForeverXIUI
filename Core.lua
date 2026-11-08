@@ -3,7 +3,7 @@
 local ADDON, ns = ...
 
 ns.name = ADDON
-ns.version = "1.4.5"
+ns.version = "1.4.6"
 ns.DB_VERSION = 5
 
 -- Defaults. New keys are filled in on load, so adding one here is safe for
