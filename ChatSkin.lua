@@ -77,9 +77,94 @@ local function Skin(cf, id)
   end
 end
 
+---------------------------------------------------------------------------
+-- The button column beside a chat window (voice, chat menu, scroll
+-- buttons): Blizzard's dark backdrop faded so the buttons float, and the
+-- column moved to the right of the window. The social (friends) button
+-- sits at the top right of General, above the rest of General's column. With "only on
+-- mouse-over" the buttons stay hidden until the mouse is over the chat.
+---------------------------------------------------------------------------
+local columns = {}
+local GAP_X = 10
+
+local function RightOf(frame)
+  local anchor = frame.fxiAnchor
+  if frame.fxiPlacing or not anchor then return end
+  frame.fxiPlacing = true
+  pcall(function()
+    frame:ClearAllPoints()
+    frame:SetPoint("TOPLEFT", anchor, "TOPRIGHT", GAP_X, frame.fxiDy or 0)
+    if frame.fxiTall then frame:SetPoint("BOTTOMLEFT", anchor, "BOTTOMRIGHT", GAP_X, 0) end
+  end)
+  frame.fxiPlacing = nil
+end
+
+local function KeepRightOf(frame, anchor, tall, dy)
+  if type(frame) ~= "table" or not frame.SetPoint then return end
+  frame.fxiTall, frame.fxiAnchor, frame.fxiDy = tall, anchor, dy
+  RightOf(frame)
+  if not frame.fxiKeep then
+    frame.fxiKeep = true
+    hooksecurefunc(frame, "SetPoint", function(f) if not f.fxiPlacing then RightOf(f) end end)
+  end
+end
+
+local function Social()
+  local q = _G.QuickJoinToastButton or _G.FriendsMicroButton
+  if type(q) ~= "table" then return end
+  KeepRightOf(q, ChatFrame1, false)
+  for _, key in ipairs({ "Background", "FriendsButton" }) do
+    local r = rawget(q, key)
+    if type(r) == "table" and r.IsObjectType and r:IsObjectType("Texture") and key == "Background" then HideArt(r) end
+  end
+end
+
+local function SkinButtons(cf, name)
+  local bf = (name and _G[name .. "ButtonFrame"]) or rawget(cf, "buttonFrame")
+  if type(bf) ~= "table" or not bf.GetRegions or columns[bf] then return end
+  columns[bf] = true
+  for _, r in ipairs({ bf:GetRegions() }) do
+    if r.IsObjectType and r:IsObjectType("Texture") then HideArt(r) end
+  end
+  HideArt(rawget(bf, "Background"))
+  if ns.db.chat.buttonsRight ~= false then
+    -- General's column starts under the social button.
+    local dy = 0
+    local q = _G.QuickJoinToastButton or _G.FriendsMicroButton
+    if cf == ChatFrame1 and type(q) == "table" and q.GetHeight then dy = -((q:GetHeight() or 32) + 2) end
+    KeepRightOf(bf, cf, true, dy)
+  end
+
+  if ns.db.chat.buttonsOnHover then
+    bf:SetAlpha(0)
+    local t = CreateFrame("Frame", nil, UIParent)
+    local acc = 0
+    t:SetScript("OnUpdate", function(_, dt)
+      acc = acc + dt
+      if acc < 0.15 then return end
+      acc = 0
+      local over = (cf:IsVisible() and cf:IsMouseOver()) or (bf:IsVisible() and bf:IsMouseOver(4, -4, -4, 4))
+      bf:SetAlpha(over and 1 or 0)
+    end)
+  end
+end
+
 local function SkinAll()
   for i = 1, (NUM_CHAT_WINDOWS or 10) do
     Skin(_G["ChatFrame" .. i], i)
+    local cf = _G["ChatFrame" .. i]
+    if cf then pcall(SkinButtons, cf, cf:GetName()) end
+  end
+  if ns.db.chat.buttonsRight ~= false then
+    pcall(Social)
+    -- Blizzard moves the column to whichever side has room; keep it right.
+    if type(FCF_UpdateButtonSide) == "function" and not M.sideHooked then
+      M.sideHooked = true
+      hooksecurefunc("FCF_UpdateButtonSide", function(f)
+        local bf = f and ((f:GetName() and _G[f:GetName() .. "ButtonFrame"]) or rawget(f, "buttonFrame"))
+        if bf and bf.fxiKeep then RightOf(bf) end
+      end)
+    end
   end
 end
 

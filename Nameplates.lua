@@ -8,6 +8,9 @@
 -- Friendly players: just the name, coloured by who they are (party green,
 -- your faction blue), with a class icon. Party and raid members also get a
 -- thin green line under the name. Friendly NPCs: name only.
+-- Things you can click (wanted posters, chests, mailboxes, herbs on the
+-- soft-interact plate): name only, no bar, in their own colour (quest
+-- yellow unless changed in the options).
 --
 -- Plater does all of this its own way, so this only runs while Plater is
 -- turned off in the AddOns list. Off by default; turning it on or off needs
@@ -108,7 +111,23 @@ end
 ---------------------------------------------------------------------------
 -- Painting
 ---------------------------------------------------------------------------
+-- Clickable world objects: the game says so where it can, and an object
+-- never has health (max health isn't a secret value on Forever).
+local function IsObject(unit)
+  if UnitIsGameObject and ns.Bool(UnitIsGameObject, unit) then return true end
+  if ns.Bool(UnitIsPlayer, unit) then return false end
+  local ok, max = pcall(UnitHealthMax, unit)
+  return ok and ns.Readable(max) and type(max) == "number" and max <= 0
+end
+
+local function ObjectColor()
+  local c = o().objectColor
+  if type(c) == "table" and c.r then return c.r, c.g, c.b end
+  return 1, 0.82, 0
+end
+
 local function Kind(unit)
+  if IsObject(unit) then return "object" end
   local isPlayer = ns.Bool(UnitIsPlayer, unit)
   local friend = ns.Bool(UnitIsFriend, "player", unit)
   local attack = ns.Bool(UnitCanAttack, "player", unit)
@@ -199,6 +218,7 @@ local function Paint(f)
   local c = NAME[kind] or NAME.hostile
   if kind == "enemy" then c = { 1, 1, 1 } end
   if kind == "pet" then c = NAME.npc end
+  if kind == "object" then c = { ObjectColor() } end
   f.name:SetTextColor(c[1], c[2], c[3])
 
   local player = kind == "party" or kind == "friend" or kind == "other" or kind == "enemyPlayer"

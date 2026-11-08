@@ -3,7 +3,7 @@
 local ADDON, ns = ...
 
 ns.name = ADDON
-ns.version = "1.4.1"
+ns.version = "1.4.5"
 ns.DB_VERSION = 5
 
 -- Defaults. New keys are filled in on load, so adding one here is safe for
@@ -77,6 +77,7 @@ ns.defaults = {
     nameSize = 13,       -- name text size on XI nameplates
     distance = 41,       -- how far away plates show (yards); 0 leaves the game's setting alone
     hideFloating = false, -- hide the game's floating names past nameplate range
+    objectColor = { r = 1, g = 0.82, b = 0 }, -- clickable objects (posters, chests): quest "!" yellow
   },
   tooltip = {
     move = true,         -- the game's tooltip goes to our spot instead of over the party list
@@ -158,6 +159,8 @@ ns.defaults = {
     stack = true,        -- combat log window stacked on top of General, same size
     fontSize = 13,       -- one text size for every chat window
     gap = 30,            -- room for General's tabs between the two windows
+    buttonsOnHover = false, -- chat button column (friends, voice, menu) only while the mouse is over the chat
+    buttonsRight = true,  -- chat buttons float to the right of the chat windows
     sizeOn = false,      -- true once a chat size slider is used (until then Edit Mode's size is kept)
     width = 430,
     height = 120,

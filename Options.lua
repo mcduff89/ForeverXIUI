@@ -24,6 +24,9 @@ local function B(label, button, fn, tip)
   return { kind = "button", label = label, button = button, fn = fn, tip = tip }
 end
 local function H(text) return { kind = "header", label = text } end
+local function Col(tbl, key, label, default, tip)
+  return { kind = "color", tbl = tbl, key = key, label = label, default = default, tip = tip }
+end
 
 local SIZE_LABELS = {
   player = "Player bar size", playerCast = "Your cast bar size", target = "Target bar size",
@@ -214,6 +217,8 @@ function M.Pages()
   local function ChatSize() db.chat.sizeOn = true; ChatLayout() end
   Page("Chat & damage meter", nil, {
     C(m, "chat", "Chat window skin", nil, true),
+    C(db.chat, "buttonsRight", "Chat buttons to the right of the chat", "The voice and chat menu buttons float right of General, the social button right of the combat log. Off: Blizzard's spot.", true),
+    C(db.chat, "buttonsOnHover", "Chat buttons only on mouse-over", "The column left of the chat (friends, voice, chat menu) stays hidden until the mouse is over the chat window.", true),
     C(db.meter, "skin", "XI damage meter", "The built-in damage meter in the XI window. Move it in Edit Mode.", true),
     C(db.chat, "stack", "Stack the combat log on top of General",
       "Same width, height and text size, like FFXI's two chat logs. The combat log follows General."),
@@ -254,6 +259,8 @@ function M.Pages()
     C(db.nameplates, "partyBars", "XI nameplates: green bars on party members"),
     C(db.nameplates, "hidePets", "XI nameplates: no names on pets, minions and totems"),
     C(db.nameplates, "castBars", "XI nameplates: enemy cast bars"),
+    Col(db.nameplates, "objectColor", "XI nameplates: clickable objects colour", { 1, 0.82, 0 },
+      "Wanted posters, chests, mailboxes and other things you can click show just their name, in this colour. Default is quest yellow."),
     C(db.nameplates, "hideFloating", "XI nameplates: hide the game's far-away names", "Past nameplate range the game shows plain floating names. On: nothing shows until the XI plate does."),
     H("Tooltip"),
     C(db.tooltip, "move", "Move the tooltip", "The game's tooltip gets its own spot (drag it in move mode) instead of the bottom-right corner over your party list.", true),

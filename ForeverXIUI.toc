@@ -2,7 +2,7 @@
 ## Title: |cff78c4eeForever|rXIUI
 ## Notes: XIUI-style player bar, target bar, target of target, cast bars, party list with buffs and pets, raid list, EXP bar, totem bar, swing timer, gold on the EXP bar and chat window for WoW Forever. Type /fxiui.
 ## Author: mcduff89
-## Version: 1.4.1
+## Version: 1.4.5
 ## SavedVariables: ForeverXIUIDB
 ## OptionalDeps: Baganator, Auctionator
 

@@ -150,9 +150,77 @@ local function MakeHeader(parent, item)
   return f, 30
 end
 
+-- A colour swatch: click it for the game's colour picker, Reset for the default.
+local function OpenPicker(r, g, b, onPick)
+  local cp = ColorPickerFrame
+  if not cp then return end
+  local function Picked()
+    local nr, ng, nb = cp:GetColorRGB()
+    onPick(nr, ng, nb)
+  end
+  local function Cancel() onPick(r, g, b) end
+  if cp.SetupColorPickerAndShow then
+    cp:SetupColorPickerAndShow({ r = r, g = g, b = b, hasOpacity = false,
+      swatchFunc = Picked, cancelFunc = Cancel })
+  else
+    cp.hasOpacity = false
+    cp.func, cp.swatchFunc, cp.cancelFunc = Picked, Picked, Cancel
+    cp.previousValues = { r, g, b }
+    if cp.SetColorRGB then cp:SetColorRGB(r, g, b) end
+    if ShowUIPanel then ShowUIPanel(cp) else cp:Show() end
+  end
+  -- Over our window, which sits at FULLSCREEN_DIALOG.
+  cp:SetFrameStrata("FULLSCREEN_DIALOG")
+  cp:SetFrameLevel(((win and win:GetFrameLevel()) or 1) + 50)
+  cp:Raise()
+end
+
+local function MakeColor(parent, item)
+  local f = CreateFrame("Frame", nil, parent)
+  f:SetSize(ROW_W - 20, 28)
+  local t = ns.Style.Text(f, 12)
+  t:SetPoint("LEFT", 4, 0)
+  t:SetText(LabelText(item))
+  local reset = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+  reset:SetSize(60, 22)
+  reset:SetPoint("RIGHT", -4, 0)
+  reset:SetText("Reset")
+  local sw = CreateFrame("Button", nil, f)
+  sw:SetSize(40, 18)
+  sw:SetPoint("RIGHT", reset, "LEFT", -8, 0)
+  local edge = sw:CreateTexture(nil, "BACKGROUND")
+  edge:SetAllPoints()
+  edge:SetColorTexture(ns.Style.Color("edge"))
+  local fill = sw:CreateTexture(nil, "ARTWORK")
+  fill:SetPoint("TOPLEFT", 1, -1)
+  fill:SetPoint("BOTTOMRIGHT", -1, 1)
+  local hl = sw:CreateTexture(nil, "HIGHLIGHT")
+  hl:SetAllPoints()
+  hl:SetColorTexture(1, 1, 1, 0.2)
+
+  local function Get()
+    local c = item.tbl[item.key]
+    if type(c) == "table" and c.r then return c.r, c.g, c.b end
+    return item.default[1], item.default[2], item.default[3]
+  end
+  local function Set(r, g, b)
+    item.tbl[item.key] = { r = r, g = g, b = b }
+    fill:SetColorTexture(r, g, b, 1)
+    Apply(item)
+  end
+  f.Refresh = function() fill:SetColorTexture(Get()) end
+  sw:SetScript("OnClick", function()
+    local r, g, b = Get()
+    OpenPicker(r, g, b, Set)
+  end)
+  reset:SetScript("OnClick", function() Set(item.default[1], item.default[2], item.default[3]) end)
+  Tip(sw, item.label, item.tip)
+  return f, 32
+end
+
 local function MakeCustom(parent, item) return item.build(parent, ROW_W - 20) end
 
-local MAKERS = { check = MakeCheck, slider = MakeSlider, button = MakeButton, header = MakeHeader, custom = MakeCustom }
+local MAKERS = { check = MakeCheck, slider = MakeSlider, button = MakeButton, header = MakeHeader, custom = MakeCustom, color = MakeColor }
 
 local function BuildPage(page)
   local c = CreateFrame("Frame", nil, win.scroll)
