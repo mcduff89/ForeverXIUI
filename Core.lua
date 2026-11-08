@@ -3,7 +3,7 @@
 local ADDON, ns = ...
 
 ns.name = ADDON
-ns.version = "1.4.6"
+ns.version = "1.4.9"
 ns.DB_VERSION = 5
 
 -- Defaults. New keys are filled in on load, so adding one here is safe for
@@ -78,6 +78,10 @@ ns.defaults = {
     distance = 41,       -- how far away plates show (yards); 0 leaves the game's setting alone
     hideFloating = false, -- hide the game's floating names past nameplate range
     objectColor = { r = 1, g = 0.82, b = 0 }, -- clickable objects (posters, chests): quest "!" yellow
+  },
+  gather = {
+    interact = true,     -- Interact key picks the nearest object all around you, up to 30 yards
+    icons = true,        -- the interact icon over herbs, ore and other objects
   },
   tooltip = {
     move = true,         -- the game's tooltip goes to our spot instead of over the party list
@@ -167,6 +171,7 @@ ns.defaults = {
   },     -- fade out Blizzard's bag bar (B still opens bags)
   party = {
     showSolo = true,     -- XIUI "show party list when solo"
+    groupTools = true,   -- Blizzard's group tools panel above the party list, XI look
     auras = true,        -- buff and debuff icons beside each member
     showBuffs = true,
     showDebuffs = true,

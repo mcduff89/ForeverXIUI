@@ -113,6 +113,8 @@ function M.Pages()
     H("Frames"),
     C(m, "party", "Party list", nil, true),
     C(m, "raid", "Raid list", "Other raid groups, on the right.", true),
+    C(db.party, "groupTools", "Group tools on the party title",
+      "Blizzard's group panel (role check, ready check, countdown, raid markers, Leave Party) opens upward when you click \"Party\" above the party list, instead of sliding out at the top left. XI look.", true),
     C(p, "showSolo", "Show party list when solo", nil, true),
     C(db.raid, "hideOwnGroup", "Leave my group out of the raid list", "It's already in the party list."),
     H("Buffs and debuffs"),
@@ -242,6 +244,11 @@ function M.Pages()
   })
 
   Page("Nameplates & tooltip", { "tooltip" }, {
+    H("Gathering"),
+    C(db.gather, "interact", "Interact with the nearest object",
+      "Your Interact key picks the nearest herb, ore, chest or poster all around you, up to 30 yards (SoftTargetInteract 3, Arc 2, Range 30). Off puts your old settings back."),
+    C(db.gather, "icons", "Icon over the object you'd interact with",
+      "Shows the gather or interact icon over that herb, ore or object (SoftTargetIconGameObject 1, SoftTargetIconInteract 1). Off puts your old settings back."),
     H("Plater"),
     C(db.plater, "skin", "Easier-to-read Plater",
       "Bigger outlined names, names only on friendly players, bigger enemy bars with health %, in the XI look. Written into Plater once; /fxiui plater undo puts your old settings back.", true),

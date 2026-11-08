@@ -1,4 +1,4 @@
-# ForeverXIUI 1.4.6
+# ForeverXIUI 1.4.9
 
 An FFXI-style UI for WoW Forever, inspired by XIUI's look: navy windows with thin steel edges and clean bars, for the player, target, cast bars, party, raid, minimap, menu, EXP bar, bags and more. Everything can be moved, sized and switched off. Not affiliated with XIUI; no XIUI code or art is used.
 
@@ -110,6 +110,9 @@ Health, power and other units' casts can be "secret" in combat. ForeverXIUI neve
 - 1.4.4 (2026-11-08): Chat buttons float with no backdrop, to the right of the chat: voice and chat menu beside General, the social button beside the combat log. Option "Chat buttons to the right of the chat" (on).
 - 1.4.5 (2026-11-08): Clickable objects (wanted posters, chests, mailboxes) on XI nameplates show just their name, no health bar, in quest yellow, with a colour picker in the options. The social button moves to the top right of General, above the chat buttons.
 - 1.4.6 (2026-11-08): The built-in Duff profile is refreshed with mcduff89's current setup (new chat button placement and the object nameplate colour).
+- 1.4.7 (2026-11-08): Gathering options on the Nameplates & tooltip page: Interact picks the nearest object all around you up to 30 yards, and the interact icon shows over herbs, ore and objects. Both on; turning one off puts your old game settings back.
+- 1.4.8 (2026-11-08): Group tools (role and ready checks, countdown, raid markers, Leave Party) move from the top left to a "Group tools" tab above the party list that opens upward, in the XI look. Option on the Party & raid page.
+- 1.4.9 (2026-11-08): Group tools open by clicking the "Party" title on the party list (a +/- beside it) instead of a separate tab.
 - 1.1.2 (2026-11-08): The quest tracker now swaps with Polestar's guide window: hidden while PolestarGuideFrame is showing, back when it isn't (dungeons, or Polestar closed). Changes wait until out of combat.
 - 1.1.1 (2026-11-08): Blizzard's quest/objective tracker is hidden while Polestar is loaded (Blizzard frames: "Hide Blizzard quest tracker while Polestar is on"). Hidden out of combat and again whenever the game shows it.
 - 1.1.0 (2026-11-08): Profile.lua (new): profile export/import. One line of text with every ForeverXIUI setting (sizes, positions, options) and the active Edit Mode layout. Import replaces the settings (keeps this PC's gold totals), adds the Edit Mode layout as a new account layout "FXI <date>" and makes it active, then reloads. /fxiui export, /fxiui import, or the buttons on the main options page.

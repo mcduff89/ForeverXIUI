@@ -19,7 +19,7 @@ local SKIP = { gold = true, dbVersion = true, profiles = true }
 -- This PC's own state, never exported or imported: Plater's saved backup
 -- and whether our Plater look was already written, and the nameplate
 -- distance the game had before we changed it.
-local LOCAL = { plater = { backup = true, applied = true }, nameplates = { cvarBackup = true } }
+local LOCAL = { plater = { backup = true, applied = true }, nameplates = { cvarBackup = true }, gather = { cvarBackup = true } }
 
 ---------------------------------------------------------------------------
 -- A small, data-only serializer (no code is ever run from a pasted line).

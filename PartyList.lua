@@ -463,3 +463,133 @@ function M:Preview(on)
     Refresh(f)
   end
 end
+
+---------------------------------------------------------------------------
+-- Group tools: Blizzard's raid/party manager (role check, ready check,
+-- countdown, world markers, Leave Party), which normally slides out
+-- sideways from the top left. Here clicking the party list's "Party"
+-- title opens it upward from there, in the XI look.
+-- It holds secure buttons (world markers), so it is only moved, opened
+-- or closed out of combat.
+---------------------------------------------------------------------------
+local G = ns.AddModule("GroupTools")
+
+local function Mgr() return _G.CompactRaidFrameManager end
+
+local function Toggles(m)
+  local t = {}
+  for _, k in ipairs({ "toggleButton", "toggleButtonForward", "toggleButtonBack" }) do
+    local b = rawget(m, k)
+    if type(b) == "table" then t[#t + 1] = b end
+  end
+  return t
+end
+
+local function IsOpen(m)
+  local d = rawget(m, "displayFrame")
+  return d and d:IsShown() or false
+end
+
+function G.Place()
+  local m, tab = Mgr(), G.tab
+  if not (m and tab) then return end
+  if InCombatLockdown() then ns.AfterCombat("groupTools", G.Place) return end
+  G.placing = true
+  pcall(function()
+    m:ClearAllPoints()
+    m:SetPoint("BOTTOMRIGHT", tab, "TOPRIGHT", 0, 2)
+  end)
+  G.placing = nil
+end
+
+local function SetOpen(open)
+  local m = Mgr()
+  if not m then return end
+  if InCombatLockdown() then ns.Print("group tools open after combat.") return end
+  local fn = open and (m.Expand or _G.CompactRaidFrameManager_Expand)
+    or (m.Collapse or _G.CompactRaidFrameManager_Collapse)
+  if fn then pcall(fn, m) end
+  local d = rawget(m, "displayFrame")
+  if d and d:IsShown() ~= open then pcall(d.SetShown, d, open) end
+  G.Place()
+  G.Refresh()
+end
+
+function G.Refresh()
+  local m, tab = Mgr(), G.tab
+  if not (m and tab) then return end
+  tab:SetShown(m:IsShown())
+  local open = IsOpen(m)
+  tab.text:SetText(open and "-" or "+")
+  if G.bg then G.bg:SetShown(open) end
+end
+
+local function Skin(m)
+  -- Blizzard's frame art (border, background) faded; buttons and text kept.
+  for _, r in ipairs({ m:GetRegions() }) do
+    if r.IsObjectType and r:IsObjectType("Texture") then ns.Style.FadeArt(r) end
+  end
+  local d = rawget(m, "displayFrame")
+  if d then
+    for _, r in ipairs({ d:GetRegions() }) do
+      if r.IsObjectType and r:IsObjectType("Texture") then ns.Style.FadeArt(r) end
+    end
+    local bg = CreateFrame("Frame", nil, m)
+    bg:SetPoint("TOPLEFT", d, "TOPLEFT", -4, 4)
+    bg:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", 4, -4)
+    bg:SetFrameLevel(math.max(0, d:GetFrameLevel() - 1))
+    ns.Style.Panel(bg, 0.92)
+    G.bg = bg
+  end
+  -- Blizzard's slide-out arrow: our tab does that now.
+  for _, b in ipairs(Toggles(m)) do
+    b:SetAlpha(0)
+    b:EnableMouse(false)
+    hooksecurefunc(b, "SetAlpha", function(s) if s:GetAlpha() > 0 then s:SetAlpha(0) end end)
+  end
+  if m.EnableMouse then m:EnableMouse(false) end
+end
+
+function G:Init()
+  if ns.db.party.groupTools == false or not ns.db.modules.party then return end
+  local m, party = Mgr(), _G.ForeverXIUIPartyList
+  if not (m and party) then return end
+
+  -- The party list's own "Party" title is the button: a small +/- beside it.
+  local title = party.title
+  local tab = CreateFrame("Button", nil, party)
+  tab:SetPoint("TOPLEFT", title, "TOPLEFT", -16, 3)
+  tab:SetPoint("BOTTOMRIGHT", title, "BOTTOMRIGHT", 3, -3)
+  tab:SetFrameLevel(party:GetFrameLevel() + 20)
+  tab.text = ns.Style.Text(tab, 12)
+  tab.text:SetPoint("RIGHT", title, "LEFT", -3, 0)
+  tab.text:SetTextColor(ns.Style.Color("title"))
+  local hl = tab:CreateTexture(nil, "HIGHLIGHT")
+  hl:SetAllPoints()
+  hl:SetColorTexture(0.47, 0.77, 0.93, 0.15)
+  tab:SetScript("OnClick", function() SetOpen(not IsOpen(m)) end)
+  tab:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:AddLine("Group tools")
+    GameTooltip:AddLine("Click for role and ready checks, countdown, raid markers and Leave Party.", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  tab:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  G.tab = tab
+
+  local ok, err = pcall(Skin, m)
+  if not ok then ns.Print("group tools: %s", tostring(err)) end
+
+  hooksecurefunc(m, "SetPoint", function() if not G.placing then G.Place() end end)
+  m:HookScript("OnShow", G.Refresh)
+  m:HookScript("OnHide", G.Refresh)
+  local d = rawget(m, "displayFrame")
+  if d then
+    d:HookScript("OnShow", G.Refresh)
+    d:HookScript("OnHide", G.Refresh)
+  end
+  -- Start closed.
+  if not InCombatLockdown() and IsOpen(m) then SetOpen(false) end
+  G.Place()
+  G.Refresh()
+end

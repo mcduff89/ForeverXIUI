@@ -421,3 +421,46 @@ function M.Describe()
   for _ in pairs(byUnit) do n = n + 1 end
   return ("on, %d plates"):format(n)
 end
+
+---------------------------------------------------------------------------
+-- Gathering helpers: the game's soft-interact settings (CVars), so the
+-- Interact key picks the nearest herb, ore, chest or poster all around you,
+-- and its icon shows over it. They work with any nameplates (or none), so
+-- this is its own module. The old values are kept and put back when an
+-- option is turned off.
+---------------------------------------------------------------------------
+local G = ns.AddModule("Gathering")
+
+local GATHER = {
+  interact = { SoftTargetInteract = 3, SoftTargetInteractArc = 2, SoftTargetInteractRange = 30 },
+  icons = { SoftTargetIconGameObject = 1, SoftTargetIconInteract = 1 },
+}
+
+local function gdb() return ns.db.gather end
+
+function G.Apply()
+  if InCombatLockdown() then G.pending = true return end
+  G.pending = nil
+  local db = gdb()
+  db.cvarBackup = db.cvarBackup or {}
+  local b = db.cvarBackup
+  for opt, vars in pairs(GATHER) do
+    for name, value in pairs(vars) do
+      if db[opt] then
+        if b[name] == nil then b[name] = GetCV(name) end
+        SetCV(name, value)
+      elseif b[name] ~= nil then
+        if SetCV(name, b[name]) then b[name] = nil end
+      end
+    end
+  end
+end
+
+function G:Init()
+  pcall(G.Apply)
+  local ev = CreateFrame("Frame")
+  ev:RegisterEvent("PLAYER_REGEN_ENABLED")
+  ev:SetScript("OnEvent", function() if G.pending then pcall(G.Apply) end end)
+end
+
+function G:Relayout() pcall(G.Apply) end
