@@ -3,7 +3,7 @@
 local ADDON, ns = ...
 
 ns.name = ADDON
-ns.version = "1.4.0"
+ns.version = "1.4.1"
 ns.DB_VERSION = 5
 
 -- Defaults. New keys are filled in on load, so adding one here is safe for
@@ -147,7 +147,7 @@ ns.defaults = {
   },
   bars = {
     enabled = true,      -- XI window behind action bars 1-3
-    highlight = false,   -- light up bar 2 while Shift is held (off: Zac dropped the idea)
+    highlight = false,   -- light up bar 2 while Shift is held (off: mcduff89 dropped the idea)
     dim = true,          -- dim bar 1 while Shift is held
     dimAlpha = 0.55,
     glowBase = false,    -- also outline bar 1 when no modifier is held
@@ -205,12 +205,12 @@ local function Migrate(db)
     db.menuSkin = false
     db.dbVersion = 2
   end
-  -- 3 (0.4.0): Zac asked for every Blizzard piece in the XI navy, the menu too.
+  -- 3 (0.4.0): mcduff89 asked for every Blizzard piece in the XI navy, the menu too.
   if db.dbVersion < 3 then
     db.menuSkin = true
     db.dbVersion = 3
   end
-  -- 4 (0.4.1): Zac's party layout: timers on, icons beside the window (not
+  -- 4 (0.4.1): mcduff89's party layout: timers on, icons beside the window (not
   -- under the name), 14px icons. Pets moved to the right (flip now means left).
   if db.dbVersion < 4 then
     if type(db.party) == "table" then

@@ -1,6 +1,6 @@
 # ForeverXIUI
 
-XIUI-style UI for WoW Forever: player bar, target bar, cast bars, party list, raid list and chat windows in XIUI's navy-and-gradient look. Built for Zac's layout. Not affiliated with XIUI; no XIUI code or art is used.
+XIUI-style UI for WoW Forever: player bar, target bar, cast bars, party list, raid list and chat windows in XIUI's navy-and-gradient look. Built for mcduff89's layout. Not affiliated with XIUI; no XIUI code or art is used.
 
 ## Install
 Copy the `ForeverXIUI` folder into `C:\Program Files (x86)\World of Warcraft\_forever_\Interface\AddOns\` and `/reload`.
@@ -54,7 +54,8 @@ Health, power and other units' casts can be "secret" in combat. ForeverXIUI neve
 - 1.3.1 (2026-11-08): The looking-for-group eye (QueueStatusButton) moves off the faded micro menu onto the map and joins the minimap button column. It still only shows while you are queued.
 - 1.3.2 (2026-11-08): The tracking magnifier sits inside the map's top-right corner at minimap-button size instead of at the end of the button column.
 - 1.3.3 (2026-11-08): The tracking magnifier is moved onto the map (re-parented to Minimap, raised above it), because it drew behind the map in 1.3.2.
-- 1.4.0 (2026-11-08): Profiles. New Presets.lua with the built-in "Duff" profile (Zac's settings and Edit Mode layout); a fresh install starts with its settings. New Profiles page in the ForeverXIUI window: drop-down of saved profiles with Load (settings + Edit Mode layout, then reload), Save as and Delete; Export/Import moved there. Profiles are saved per account. Exports no longer carry this PC's Plater state or nameplate-distance backup, and imports keep them.
+- 1.4.0 (2026-11-08): Profiles. New Presets.lua with the built-in "Duff" profile (mcduff89's settings and Edit Mode layout); a fresh install starts with its settings. New Profiles page in the ForeverXIUI window: drop-down of saved profiles with Load (settings + Edit Mode layout, then reload), Save as and Delete; Export/Import moved there. Profiles are saved per account. Exports no longer carry this PC's Plater state or nameplate-distance backup, and imports keep them.
+- 1.4.1 (2026-11-08): Author shown as mcduff89 (the .toc, the license and the notes).
 - 1.1.2 (2026-11-08): The quest tracker now swaps with Polestar's guide window: hidden while PolestarGuideFrame is showing, back when it isn't (dungeons, or Polestar closed). Changes wait until out of combat.
 - 1.1.1 (2026-11-08): Blizzard's quest/objective tracker is hidden while Polestar is loaded (Blizzard frames: "Hide Blizzard quest tracker while Polestar is on"). Hidden out of combat and again whenever the game shows it.
 - 1.1.0 (2026-11-08): Profile.lua (new): profile export/import. One line of text with every ForeverXIUI setting (sizes, positions, options) and the active Edit Mode layout. Import replaces the settings (keeps this PC's gold totals), adds the Edit Mode layout as a new account layout "FXI <date>" and makes it active, then reloads. /fxiui export, /fxiui import, or the buttons on the main options page.

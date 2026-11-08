@@ -1,5 +1,5 @@
 -- Built-in profiles: whole profile lines (the same text /fxiui export
--- makes). "Duff" is Zac's setup and what a fresh install starts with.
+-- makes). "Duff" is mcduff89's setup and what a fresh install starts with.
 -- They show in the Profiles page of the ForeverXIUI window; loading one
 -- also brings its Edit Mode layout.
 local _, ns = ...
