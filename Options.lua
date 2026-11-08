@@ -65,8 +65,16 @@ function M.Pages()
       "Shows a full pretend party and raid to place and size them. Also /fxiui preview."),
     B("Edit Mode list", "Tidy", function() local pr = Pr(); if pr then pr.RunTidy(true) end end,
       "Unticks the HUD Edit Mode entries ForeverXIUI replaces (target and focus, party, raid, cast bar, totem bar, swing timer, status bar 2, and boss frames when those are hidden), then reloads. Importing a profile does this too. Also /fxiui tidy."),
-    H("Profile"),
-    B("Profile", "Export", function() local pr = Pr(); if pr then pr.ShowExport() end end,
+  })
+
+  Page("Profiles", nil, {
+    H("Saved profiles"),
+    { kind = "custom", build = function(parent, width)
+      local pr = Pr()
+      if pr and pr.Picker then return pr.Picker(parent, width) end
+    end },
+    H("Share"),
+    B("Profile line", "Export", function() local pr = Pr(); if pr then pr.ShowExport() end end,
       "Every ForeverXIUI setting and your current Edit Mode layout as one line of text to copy. Also /fxiui export."),
     B("", "Import", function() local pr = Pr(); if pr then pr.ShowImport() end end,
       "Paste a profile line to load it (and its Edit Mode layout), then reload. Also /fxiui import."),

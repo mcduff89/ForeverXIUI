@@ -3,7 +3,7 @@
 local ADDON, ns = ...
 
 ns.name = ADDON
-ns.version = "1.3.3"
+ns.version = "1.4.0"
 ns.DB_VERSION = 5
 
 -- Defaults. New keys are filled in on load, so adding one here is safe for
@@ -342,7 +342,21 @@ end
 
 ns.On("ADDON_LOADED", function(_, name)
   if name ~= ADDON then return end
-  ForeverXIUIDB = ForeverXIUIDB or {}
+  if ForeverXIUIDB == nil then
+    -- Fresh install: start from the built-in default profile (Duff's
+    -- settings). Its Edit Mode layout isn't applied here; load the
+    -- profile from the Profiles page for that.
+    ForeverXIUIDB = {}
+    local pr, preset = ns.modules.Profile, ns.PRESETS and ns.PRESETS[ns.DEFAULT_PRESET or ""]
+    if pr and pr.SettingsOf and preset then
+      local ok, data = pcall(pr.SettingsOf, preset)
+      if ok and type(data) == "table" then
+        for k, v in pairs(data) do ForeverXIUIDB[k] = v end
+        ForeverXIUIDB.dbVersion = ns.DB_VERSION
+        ns.startedFromPreset = ns.DEFAULT_PRESET
+      end
+    end
+  end
   Migrate(ForeverXIUIDB)
   FillDefaults(ForeverXIUIDB, ns.defaults)
   ForeverXIUIDB.dbVersion = ns.DB_VERSION
@@ -353,6 +367,9 @@ ns.On("PLAYER_LOGIN", function()
   ns.ForEachModule("Init")
   ns.ApplyScale()
   ns.Print("v%s loaded. /fxiui for options, /fxiui move to place frames.", ns.version)
+  if ns.startedFromPreset then
+    ns.Print("first run: set up with the %s profile. Load it from /fxiui > Profiles to get its Edit Mode layout too.", ns.startedFromPreset)
+  end
 end)
 
 -- /fxiui preview: pretend party, raid, target and casts, to lay things out.

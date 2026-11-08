@@ -15,7 +15,11 @@ local M = ns.AddModule("Profile")
 
 local TAG = "!FXI1!"
 local EM_SEP = "#EM#"
-local SKIP = { gold = true, dbVersion = true }
+local SKIP = { gold = true, dbVersion = true, profiles = true }
+-- This PC's own state, never exported or imported: Plater's saved backup
+-- and whether our Plater look was already written, and the nameplate
+-- distance the game had before we changed it.
+local LOCAL = { plater = { backup = true, applied = true }, nameplates = { cvarBackup = true } }
 
 ---------------------------------------------------------------------------
 -- A small, data-only serializer (no code is ever run from a pasted line).
@@ -26,7 +30,7 @@ local function EscStr(s)
   end))
 end
 
-local function Ser(v, depth)
+local function Ser(v, depth, parent)
   local t = type(v)
   if t == "number" then return ("%.17g"):format(v)
   elseif t == "boolean" then return v and "T" or "F"
@@ -37,8 +41,8 @@ local function Ser(v, depth)
     for k, val in pairs(v) do
       local kt, vt = type(k), type(val)
       if (kt == "string" or kt == "number") and vt ~= "function" and vt ~= "userdata" and vt ~= "thread"
-        and not (depth == 0 and SKIP[k]) and not (k == "backup" and depth == 1) then
-        parts[#parts + 1] = "[" .. Ser(k, depth + 1) .. "]=" .. Ser(val, depth + 1)
+        and not (depth == 0 and SKIP[k]) and not (depth == 1 and LOCAL[parent] and LOCAL[parent][k]) then
+        parts[#parts + 1] = "[" .. Ser(k, depth + 1) .. "]=" .. Ser(val, depth + 1, depth == 0 and k or nil)
       end
     end
     return "{" .. table.concat(parts, ",") .. "}"
@@ -213,7 +217,8 @@ local function Box()
   local f = CreateFrame("Frame", "ForeverXIUIProfile", UIParent)
   f:SetSize(520, 260)
   f:SetPoint("CENTER")
-  f:SetFrameStrata("DIALOG")
+  f:SetFrameStrata("FULLSCREEN_DIALOG")
+  f:SetFrameLevel(120)
   f:SetToplevel(true)
   f:EnableMouse(true)
   f:SetMovable(true)
@@ -296,7 +301,11 @@ function M.Import(text)
   end
   -- Replace the settings, keeping this PC's own gold totals and Plater backup.
   local keepGold = ns.db.gold
-  local keepBackup = ns.db.plater and ns.db.plater.backup
+  local keep = {}
+  for section, keys in pairs(LOCAL) do
+    keep[section] = {}
+    for key in pairs(keys) do keep[section][key] = type(ns.db[section]) == "table" and ns.db[section][key] or nil end
+  end
   for k in pairs(ns.db) do
     if not SKIP[k] then ns.db[k] = nil end
   end
@@ -304,7 +313,10 @@ function M.Import(text)
     if not SKIP[k] then ns.db[k] = v end
   end
   ns.db.gold = keepGold
-  if keepBackup then ns.db.plater = ns.db.plater or {}; ns.db.plater.backup = keepBackup end
+  for section, keys in pairs(LOCAL) do
+    if type(ns.db[section]) ~= "table" then ns.db[section] = {} end
+    for key in pairs(keys) do ns.db[section][key] = keep[section][key] end
+  end
 
   local emMsg = ""
   if em and em ~= "" then
@@ -317,6 +329,202 @@ function M.Import(text)
   ns.Print("profile imported." .. emMsg)
   -- Straight from the button click, so the game allows the reload.
   if ReloadUI then ReloadUI() end
+end
+
+---------------------------------------------------------------------------
+-- Saved profiles: whole profile lines kept by name (account-wide), plus
+-- the built-in ones in Presets.lua. Loading one is the same as importing it.
+---------------------------------------------------------------------------
+local function Saved()
+  ns.db.profiles = type(ns.db.profiles) == "table" and ns.db.profiles or {}
+  return ns.db.profiles
+end
+
+function M.List()
+  local names, seen = {}, {}
+  for name in pairs(ns.PRESETS or {}) do names[#names + 1] = name; seen[name] = true end
+  for name in pairs(Saved()) do if not seen[name] then names[#names + 1] = name end end
+  table.sort(names, function(a, b) return a:lower() < b:lower() end)
+  return names
+end
+
+function M.IsBuiltIn(name) return ns.PRESETS ~= nil and ns.PRESETS[name] ~= nil end
+
+function M.Save(name)
+  name = (name or ""):gsub("^%s+", ""):gsub("%s+$", "")
+  if name == "" then ns.Print("give the profile a name.") return end
+  if M.IsBuiltIn(name) then ns.Print("%s is a built-in profile; pick another name.", name) return end
+  Saved()[name] = (M.ExportString())
+  ns.Print("profile saved as %s.", name)
+  return true
+end
+
+function M.Load(name)
+  local text = Saved()[name] or (ns.PRESETS or {})[name]
+  if not text then ns.Print("no profile called %s.", tostring(name)) return end
+  M.Import(text)
+end
+
+function M.Delete(name)
+  if M.IsBuiltIn(name) then ns.Print("%s is built in and can't be deleted.", name) return end
+  Saved()[name] = nil
+  ns.Print("profile %s deleted.", name)
+end
+
+-- Just the settings of a profile line, for a fresh install.
+function M.SettingsOf(text)
+  text = (text or ""):gsub("^%s+", "")
+  if text:sub(1, #TAG) ~= TAG then return end
+  local body = text:sub(#TAG + 1)
+  local at = body:find(EM_SEP, 1, true)
+  if at then body = body:sub(1, at - 1) end
+  local ok, data = pcall(Parse, (body:gsub("%s", "")))
+  if not ok or type(data) ~= "table" then return end
+  for k in pairs(SKIP) do data[k] = nil end
+  for section, keys in pairs(LOCAL) do
+    if type(data[section]) == "table" then for key in pairs(keys) do data[section][key] = nil end end
+  end
+  return data
+end
+
+-- Name box for "Save as".
+local nameBox
+local function AskName(onDone)
+  if not nameBox then
+    local f = CreateFrame("Frame", nil, UIParent)
+    f:SetSize(300, 96)
+    f:SetPoint("CENTER", 0, 120)
+    f:SetFrameStrata("FULLSCREEN_DIALOG")
+    f:SetFrameLevel(140)
+    f:SetToplevel(true)
+    f:EnableMouse(true)
+    ns.Style.Panel(f, 0.98)
+    local t = ns.Style.Text(f, 12)
+    t:SetPoint("TOP", 0, -10)
+    t:SetText("Save these settings as:")
+    local e = CreateFrame("EditBox", nil, f, "InputBoxTemplate")
+    e:SetSize(240, 22)
+    e:SetPoint("TOP", 0, -32)
+    e:SetAutoFocus(true)
+    e:SetMaxLetters(32)
+    local ok = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    ok:SetSize(100, 22)
+    ok:SetPoint("BOTTOMRIGHT", f, "BOTTOM", -4, 10)
+    ok:SetText("Save")
+    local no = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    no:SetSize(100, 22)
+    no:SetPoint("BOTTOMLEFT", f, "BOTTOM", 4, 10)
+    no:SetText("Cancel")
+    local function Done()
+      if f.onDone and f.onDone(e:GetText()) then f:Hide() end
+    end
+    ok:SetScript("OnClick", Done)
+    e:SetScript("OnEnterPressed", Done)
+    e:SetScript("OnEscapePressed", function() f:Hide() end)
+    no:SetScript("OnClick", function() f:Hide() end)
+    f.edit = e
+    nameBox = f
+  end
+  nameBox.onDone = onDone
+  nameBox.edit:SetText("")
+  nameBox:Show()
+  nameBox:Raise()
+  nameBox.edit:SetFocus()
+end
+
+-- The profile picker for the options window: a drop-down of saved
+-- profiles with Load, Save as and Delete.
+function M.Picker(parent, width)
+  local f = CreateFrame("Frame", nil, parent)
+  f:SetSize(width, 64)
+  local selected
+
+  local drop = CreateFrame("Button", nil, f)
+  drop:SetSize(220, 22)
+  drop:SetPoint("TOPLEFT", 4, -4)
+  ns.Style.Panel(drop, 0.95)
+  local label = ns.Style.Text(drop, 12)
+  label:SetPoint("LEFT", 8, 0)
+  local arrow = ns.Style.Text(drop, 12)
+  arrow:SetPoint("RIGHT", -8, 0)
+  arrow:SetText("v")
+  arrow:SetTextColor(ns.Style.Color("title"))
+
+  -- The list opens on UIParent so the options page can't clip it.
+  local list = CreateFrame("Frame", nil, UIParent)
+  list:SetFrameStrata("FULLSCREEN_DIALOG")
+  list:SetFrameLevel(130)
+  list:SetPoint("TOPLEFT", drop, "BOTTOMLEFT", 0, -2)
+  list:SetWidth(220)
+  list:EnableMouse(true)
+  list:Hide()
+  ns.Style.Panel(list, 0.98)
+  list.rows = {}
+
+  local load, del
+  local function Paint()
+    label:SetText(selected and (selected .. (M.IsBuiltIn(selected) and " |cff7f8aa6(built in)|r" or "")) or "|cff7f8aa6Pick a profile|r")
+    if load then load:SetEnabled(selected ~= nil) end
+    if del then del:SetEnabled(selected ~= nil and not M.IsBuiltIn(selected)) end
+  end
+
+  local function Fill()
+    local names = M.List()
+    for i, name in ipairs(names) do
+      local r = list.rows[i]
+      if not r then
+        r = CreateFrame("Button", nil, list)
+        r:SetSize(212, 20)
+        r:SetPoint("TOPLEFT", 4, -4 - (i - 1) * 20)
+        local hl = r:CreateTexture(nil, "HIGHLIGHT")
+        hl:SetAllPoints()
+        hl:SetColorTexture(0.47, 0.77, 0.93, 0.2)
+        r.text = ns.Style.Text(r, 12)
+        r.text:SetPoint("LEFT", 6, 0)
+        list.rows[i] = r
+      end
+      r.text:SetText(name .. (M.IsBuiltIn(name) and " |cff7f8aa6(built in)|r" or ""))
+      r:SetScript("OnClick", function() selected = name; list:Hide(); Paint() end)
+      r:Show()
+    end
+    for i = #names + 1, #list.rows do list.rows[i]:Hide() end
+    list:SetHeight(math.max(1, #names) * 20 + 8)
+  end
+
+  drop:SetScript("OnClick", function()
+    if list:IsShown() then list:Hide() else Fill(); list:Show(); list:Raise() end
+  end)
+  f:SetScript("OnHide", function() list:Hide() end)
+
+  local function Btn(text, x, fn, tip)
+    local b = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    b:SetSize(100, 22)
+    b:SetPoint("TOPLEFT", x, -34)
+    b:SetText(text)
+    b:SetScript("OnClick", fn)
+    b:SetScript("OnEnter", function(self)
+      GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+      GameTooltip:AddLine(text)
+      GameTooltip:AddLine(tip, 1, 1, 1, true)
+      GameTooltip:Show()
+    end)
+    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    return b
+  end
+  load = Btn("Load", 4, function() if selected then M.Load(selected) end end,
+    "Loads every setting and the Edit Mode layout in this profile, then reloads.")
+  Btn("Save as...", 110, function()
+    AskName(function(name)
+      if M.Save(name) then selected = name; Paint(); return true end
+    end)
+  end, "Saves your current settings and Edit Mode layout under a name, for this account.")
+  del = Btn("Delete", 216, function()
+    if selected and not M.IsBuiltIn(selected) then M.Delete(selected); selected = nil; Paint() end
+  end, "Removes the picked profile (not the built-in ones).")
+
+  f.Refresh = Paint
+  Paint()
+  return f, 64
 end
 
 function M.Describe()

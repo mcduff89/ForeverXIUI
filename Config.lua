@@ -150,7 +150,9 @@ local function MakeHeader(parent, item)
   return f, 30
 end
 
-local MAKERS = { check = MakeCheck, slider = MakeSlider, button = MakeButton, header = MakeHeader }
+local function MakeCustom(parent, item) return item.build(parent, ROW_W - 20) end
+
+local MAKERS = { check = MakeCheck, slider = MakeSlider, button = MakeButton, header = MakeHeader, custom = MakeCustom }
 
 local function BuildPage(page)
   local c = CreateFrame("Frame", nil, win.scroll)
