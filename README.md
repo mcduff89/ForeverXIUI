@@ -1,4 +1,4 @@
-# ForeverXIUI
+# ForeverXIUI 1.4.2
 
 An FFXI-style UI for WoW Forever, inspired by XIUI's look: navy windows with thin steel edges and clean bars, for the player, target, cast bars, party, raid, minimap, menu, EXP bar, bags and more. Everything can be moved, sized and switched off. Not affiliated with XIUI; no XIUI code or art is used.
 
