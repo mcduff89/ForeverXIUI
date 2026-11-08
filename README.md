@@ -1,16 +1,65 @@
 # ForeverXIUI
 
-XIUI-style UI for WoW Forever: player bar, target bar, cast bars, party list, raid list and chat windows in XIUI's navy-and-gradient look. Built for mcduff89's layout. Not affiliated with XIUI; no XIUI code or art is used.
+An FFXI-style UI for WoW Forever, inspired by XIUI's look: navy windows with thin steel edges and clean bars, for the player, target, cast bars, party, raid, minimap, menu, EXP bar, bags and more. Everything can be moved, sized and switched off. Not affiliated with XIUI; no XIUI code or art is used.
+
+![ForeverXIUI in a group, with the party, raid and enemy lists](screenshots/overview.jpg)
+
+### Target and player
+![Target bar with mob info, target of target and target cast bar](screenshots/target.jpg)
+
+![Player bars, cast bar, swing timer, buffs and shaman reminders](screenshots/player.jpg)
+
+### Party and raid
+![Party list with buffs and debuffs, timers and pets](screenshots/party.jpg)
+
+![Raid groups, notifications and treasure pool](screenshots/party-and-raid.jpg)
+
+### Minimap, bags and more
+| Minimap | Menu column |
+|---|---|
+| ![Square XI minimap with gold, bag slots, zone, coordinates and clock](screenshots/minimap.jpg) | ![XI menu column beside the minimap](screenshots/minimap-and-menu.jpg) |
+
+![Baganator in the XI look with free slots](screenshots/bags.jpg)
+
+| Damage meter | Treasure pool |
+|---|---|
+| ![Built-in damage meter in the XI look](screenshots/damage-meter.jpg) | ![Group loot rolls in one window](screenshots/treasure-pool.jpg) |
+
+![EXP bar with rested, quest XP, XP per hour and time to level](screenshots/exp-bar.jpg)
+
+![Chat and combat log stacked in XI windows](screenshots/chat.jpg)
+
+Solo, out of combat:
+
+![ForeverXIUI solo](screenshots/solo.jpg)
+
+## Features
+- **Player and target bars** with XI health, mana and cast bars, target of target, mob info, threat colours and buffs/debuffs.
+- **Party list** with pets beside their owners, buff and debuff icons with timers, range fading, and a **raid list** for the other groups.
+- **Enemy list** of what you and your group are fighting, and a target cast bar.
+- **Minimap** in an XI window, square, with zone, coordinates, clock, gold and bag slots, and every minimap button lined up along its edge.
+- **XI menu** column in place of the micro menu, with the buttons you pick.
+- **EXP bar** with rested, quest XP ready to hand in, XP per hour and time to level; **notifications** for loot, gold, XP and reputation; a **treasure pool** for group loot rolls.
+- **Shaman tools**: totem bar with timers, swing timer, Lightning Shield and weapon imbue reminders.
+- **Skins** for the chat windows, the built-in damage meter, Baganator bags and Plater nameplates (or ForeverXIUI's own nameplates).
+- **Junk by Auctionator price** with a sell window at vendors that lets you untick anything first.
+- **Options window** (`/fxiui`) and **move mode** (`/fxiui move`): drag any frame, click it to jump to its options.
+- **Profiles**: save, load and share setups, including your Edit Mode layout. Starts with the built-in "Duff" profile.
 
 ## Install
-Copy the `ForeverXIUI` folder into `C:\Program Files (x86)\World of Warcraft\_forever_\Interface\AddOns\` and `/reload`.
+1. Download `ForeverXIUI-<version>.zip` from the latest [release](../../releases/latest).
+2. Extract it into `World of Warcraft\_forever_\Interface\AddOns\`, so you have `AddOns\ForeverXIUI\ForeverXIUI.toc`.
+3. Start the game. Type `/fxiui` for options. To also get the Duff Edit Mode layout, load the Duff profile from the Profiles page.
+
+Works on its own. Optional extras it skins or reads from: Baganator, Auctionator, Plater, Polestar.
 
 ## Commands
-- `/fxiui` opens the options (Esc > Options > AddOns > ForeverXIUI).
-- `/fxiui move` lets you drag every frame. It also turns on while Edit Mode is open. Right-click a frame to reset it.
+- `/fxiui` opens the ForeverXIUI options window (also Esc > Options > AddOns > ForeverXIUI > Open).
+- `/fxiui move` lets you drag every frame. It also turns on while Edit Mode is open. Click a frame (without dragging) to open its options, right-click it to reset it.
 - `/fxiui preview` shows a pretend full party, 40-player raid, target and casts so you can lay things out (also on during `/fxiui move` and Edit Mode).
 - `/fxiui reset` puts every frame back to the default layout.
-- `/fxiui export` / `/fxiui import` copy every ForeverXIUI setting plus your current Edit Mode layout as one line of text, and load such a line (buttons on the main options page too).
+- `/fxiui tidy` unticks the HUD Edit Mode entries ForeverXIUI replaces, then reloads.
+- `/fxiui export` / `/fxiui import` copy every ForeverXIUI setting plus your current Edit Mode layout as one line of text, and load such a line (also on the Profiles page).
 - `/fxiui compact` toggles narrower bars.
 - `/fxiui scale 1.2` sizes everything; `/fxiui scale party 1.1` sizes one frame (player, playercast, target, targetcast, party, raid). The same sliders are in the options.
 - `/fxiui chat` re-stacks the combat log on top of General and evens out the text size.
@@ -56,6 +105,7 @@ Health, power and other units' casts can be "secret" in combat. ForeverXIUI neve
 - 1.3.3 (2026-11-08): The tracking magnifier is moved onto the map (re-parented to Minimap, raised above it), because it drew behind the map in 1.3.2.
 - 1.4.0 (2026-11-08): Profiles. New Presets.lua with the built-in "Duff" profile (mcduff89's settings and Edit Mode layout); a fresh install starts with its settings. New Profiles page in the ForeverXIUI window: drop-down of saved profiles with Load (settings + Edit Mode layout, then reload), Save as and Delete; Export/Import moved there. Profiles are saved per account. Exports no longer carry this PC's Plater state or nameplate-distance backup, and imports keep them.
 - 1.4.1 (2026-11-08): Author shown as mcduff89 (the .toc, the license and the notes).
+- 1.4.2 (2026-11-08): README with screenshots, a feature list and install steps; releases show a preview image. No changes in game.
 - 1.1.2 (2026-11-08): The quest tracker now swaps with Polestar's guide window: hidden while PolestarGuideFrame is showing, back when it isn't (dungeons, or Polestar closed). Changes wait until out of combat.
 - 1.1.1 (2026-11-08): Blizzard's quest/objective tracker is hidden while Polestar is loaded (Blizzard frames: "Hide Blizzard quest tracker while Polestar is on"). Hidden out of combat and again whenever the game shows it.
 - 1.1.0 (2026-11-08): Profile.lua (new): profile export/import. One line of text with every ForeverXIUI setting (sizes, positions, options) and the active Edit Mode layout. Import replaces the settings (keeps this PC's gold totals), adds the Edit Mode layout as a new account layout "FXI <date>" and makes it active, then reloads. /fxiui export, /fxiui import, or the buttons on the main options page.
