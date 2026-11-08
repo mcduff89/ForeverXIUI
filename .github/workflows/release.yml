@@ -1,0 +1,53 @@
+# Makes a GitHub release whenever the version in ForeverXIUI.toc changes.
+# Push as usual from GitHub Desktop: if "## Version" is new, this builds
+# ForeverXIUI-<version>.zip (one ForeverXIUI folder with only the files the
+# game needs) and publishes it as release v<version>. Pushes that don't
+# change the version do nothing.
+name: Release
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: v
+        run: |
+          version=$(grep -m1 '^## Version:' ForeverXIUI.toc | sed 's/^## Version:[[:space:]]*//' | tr -d '\r')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Build zip
+        if: steps.v.outputs.exists == 'false'
+        run: |
+          mkdir -p build/ForeverXIUI/media
+          grep -v '^#' ForeverXIUI.toc | tr -d '\r' | grep '\.lua$' | while read -r f; do
+            cp "$f" build/ForeverXIUI/
+          done
+          cp ForeverXIUI.toc README.md build/ForeverXIUI/
+          cp media/* build/ForeverXIUI/media/
+          cd build && zip -qr "../ForeverXIUI-${{ steps.v.outputs.version }}.zip" ForeverXIUI
+
+      - name: Publish release
+        if: steps.v.outputs.exists == 'false'
+        run: |
+          v="${{ steps.v.outputs.version }}"
+          notes=$(grep -m1 "^- $v " README.md || echo "ForeverXIUI $v")
+          gh release create "v$v" "ForeverXIUI-$v.zip" --title "ForeverXIUI $v" --notes "$notes"
+        env:
+          GH_TOKEN: ${{ github.token }}
