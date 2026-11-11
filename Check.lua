@@ -134,7 +134,9 @@ function ns.ShowCopy(title, lines)
     copy = CreateFrame("Frame", "ForeverXIUICopy", UIParent)
     copy:SetSize(560, 380)
     copy:SetPoint("CENTER")
-    copy:SetFrameStrata("DIALOG")
+    copy:SetFrameStrata("FULLSCREEN_DIALOG")
+    copy:SetFrameLevel(200)
+    copy:SetToplevel(true)
     copy:EnableMouse(true)
     copy:SetMovable(true)
     copy:RegisterForDrag("LeftButton")
@@ -244,3 +246,48 @@ ns.On("PLAYER_ENTERING_WORLD", function()
   ApplyHidden()
   for _, t in ipairs({ 2, 6, 15 }) do C_Timer.After(t, ApplyHidden) end
 end)
+
+-- /fxiui dump [FrameName]: the whole window under the mouse (or the named
+-- frame), three levels deep, in the copy box. For fitting the XI look to
+-- Blizzard's windows (character, spellbook, talents, ...).
+local function Under()
+  -- What the mouse is over: the game's own answer first, then any big
+  -- window under the cursor (works even while typing in the chat box).
+  local foci = GetMouseFoci and GetMouseFoci()
+  local f = (type(foci) == "table" and foci[1]) or (GetMouseFocus and GetMouseFocus())
+  while type(f) == "table" and f.GetParent and f:GetParent() and f:GetParent() ~= UIParent do
+    f = f:GetParent()
+  end
+  if type(f) == "table" and f ~= WorldFrame and f ~= UIParent and not f.fxiOurs then return f end
+  local best, bestLevel
+  for _, c in ipairs({ UIParent:GetChildren() }) do
+    local ok, over = pcall(function()
+      return c:IsVisible() and (c:GetWidth() or 0) >= 200 and (c:GetHeight() or 0) >= 150 and c:IsMouseOver()
+    end)
+    if ok and over and c ~= copy and not c.fxiOurs then
+      local lvl = (c:GetFrameLevel() or 0)
+      if not best or lvl > bestLevel then best, bestLevel = c, lvl end
+    end
+  end
+  return best
+end
+
+function ns.DumpWindow(name)
+  local f = name and _G[name]
+  if name and not f then ns.Print("no frame called %s.", name) return end
+  f = f or Under()
+  if type(f) ~= "table" then
+    ns.Print("hover a window (or type /fxiui dump FrameName) and try again.")
+    return
+  end
+  local out = {}
+  local ok, err = pcall(ns.DumpFrame, f, out, 0, 3)
+  if not ok then out[#out + 1] = "(stopped: " .. tostring(err) .. ")" end
+  if #out > 1500 then
+    local n = #out
+    for i = n, 1501, -1 do out[i] = nil end
+    out[#out + 1] = ("(cut at 1500 of %d lines)"):format(n)
+  end
+  local okS, errS = pcall(ns.ShowCopy, "Window: " .. tostring(f.GetName and f:GetName() or "?"), out)
+  if not okS then ns.Print("dump window: %s", tostring(errS)) end
+end

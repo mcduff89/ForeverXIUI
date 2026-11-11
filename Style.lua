@@ -47,7 +47,86 @@ Style.colors = {
   manaText = { Hex("#d4ff97") },
   tpText   = { Hex("#8dc7ff") },
   name     = { 1, 1, 1 },
+
+  -- Highlights and backs used across the frames (themed below).
+  accent    = { 0.47, 0.77, 0.93 },   -- hover highlights
+  accentSel = { 0.22, 0.60, 0.81 },   -- selected rows, mover boxes
+  slotBack  = { 0.06, 0.08, 0.16 },   -- bag slot backs
+  mapBack   = { 0.02, 0.07, 0.16 },   -- square backs behind minimap buttons
 }
+
+-- Window colour themes. "xi" is XIUI's navy and steel blue; "wow" keeps
+-- every layout and shape but in the game's own charcoal and gold; "dark"
+-- is neutral near-black and grey. Bars, health and power colours are not
+-- part of the theme. Picked once at load (look.theme), so changing it
+-- needs a /reload.
+Style.THEMES = {
+  wow = {
+    panelTop    = { 0.13, 0.11, 0.09 },
+    panelBottom = { 0.04, 0.035, 0.03 },
+    edge        = { 0.55, 0.43, 0.20 },
+    edgeLight   = { 1.00, 0.82, 0.35 },
+    barBack     = { 0.06, 0.05, 0.04 },
+    title       = { 1.00, 0.82, 0.00 },
+    accent      = { 1.00, 0.82, 0.20 },
+    accentSel   = { 0.75, 0.55, 0.10 },
+    slotBack    = { 0.08, 0.07, 0.06 },
+    mapBack     = { 0.05, 0.045, 0.04 },
+  },
+  dark = {
+    panelTop    = { 0.10, 0.10, 0.11 },
+    panelBottom = { 0.04, 0.04, 0.045 },
+    edge        = { 0.27, 0.27, 0.29 },
+    edgeLight   = { 0.59, 0.59, 0.61 },
+    barBack     = { 0.03, 0.03, 0.035 },
+    title       = { 0.90, 0.90, 0.92 },
+    accent      = { 0.67, 0.67, 0.71 },
+    accentSel   = { 0.40, 0.40, 0.44 },
+    slotBack    = { 0.06, 0.06, 0.065 },
+    mapBack     = { 0.04, 0.04, 0.045 },
+  },
+}
+
+-- "custom": the player's own five colours (look.custom, set with the colour
+-- picker); the rest are worked out from them.
+local function Mix(c, k, to)
+  to = to or 0
+  return { c[1] + (to - c[1]) * k, c[2] + (to - c[2]) * k, c[3] + (to - c[3]) * k }
+end
+
+local function CustomTheme(c)
+  local function C(key, def)
+    local v = type(c) == "table" and c[key]
+    if type(v) == "table" and v.r then return { v.r, v.g, v.b } end
+    return def
+  end
+  local top    = C("panelTop", Style.colors.panelTop)
+  local bottom = C("panelBottom", Style.colors.panelBottom)
+  local edge   = C("edge", Style.colors.edge)
+  local title  = C("title", Style.colors.title)
+  local accent = C("accent", Style.colors.accent)
+  return {
+    panelTop = top, panelBottom = bottom, edge = edge, title = title, accent = accent,
+    edgeLight = Mix(edge, 0.55, 1),
+    accentSel = Mix(accent, 0.35, 0),
+    barBack   = Mix(bottom, 0.4, 0),
+    slotBack  = Mix(top, 0.1, 0),
+    mapBack   = Mix(bottom, 0.2, 0),
+  }
+end
+
+function Style.ApplyTheme(name, custom)
+  local t = Style.THEMES[name]
+  if name == "custom" then t = CustomTheme(custom) end
+  if not t then return end
+  for k, v in pairs(t) do Style.colors[k] = { v[1], v[2], v[3] } end
+end
+
+-- tex:SetColorTexture in a theme colour, with alpha.
+function Style.Fill(tex, key, alpha)
+  local r, g, b = Style.Color(key)
+  tex:SetColorTexture(r, g, b, alpha or 1)
+end
 
 function Style.Color(key)
   local c = Style.colors[key] or Style.colors.name

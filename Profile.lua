@@ -478,7 +478,7 @@ function M.Picker(parent, width)
         r:SetPoint("TOPLEFT", 4, -4 - (i - 1) * 20)
         local hl = r:CreateTexture(nil, "HIGHLIGHT")
         hl:SetAllPoints()
-        hl:SetColorTexture(0.47, 0.77, 0.93, 0.2)
+        ns.Style.Fill(hl, "accent", 0.2)
         r.text = ns.Style.Text(r, 12)
         r.text:SetPoint("LEFT", 6, 0)
         list.rows[i] = r

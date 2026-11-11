@@ -25,7 +25,12 @@ local function Apply(item)
   if item.onChange then
     item.onChange(item.tbl[item.key])
   elseif item.reload then
-    ns.Print("change saved. Type /reload to apply it.")
+    -- Once, not on every step of a slider or colour drag.
+    local now = GetTime and GetTime() or 0
+    if not M.reloadSaid or now - M.reloadSaid > 10 then
+      M.reloadSaid = now
+      ns.Print("change saved. Type /reload to apply it.")
+    end
   else
     ns.ApplyScale()
     ns.ForEachModule("Relayout")
@@ -218,9 +223,47 @@ local function MakeColor(parent, item)
   return f, 32
 end
 
+-- A row of buttons, one per choice; the picked one is lit.
+local function MakeChoice(parent, item)
+  local f = CreateFrame("Frame", nil, parent)
+  f:SetSize(ROW_W - 20, 28)
+  local t = ns.Style.Text(f, 12)
+  t:SetPoint("LEFT", 4, 0)
+  t:SetText(LabelText(item))
+  local btns = {}
+  local prev
+  for i = #item.choices, 1, -1 do
+    local value, text = item.choices[i][1], item.choices[i][2]
+    local b = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    b:SetSize(70, 22)
+    if prev then b:SetPoint("RIGHT", prev, "LEFT", -4, 0) else b:SetPoint("RIGHT", -4, 0) end
+    b:SetText(text)
+    b.value = value
+    b:SetScript("OnClick", function()
+      item.tbl[item.key] = value
+      f.Refresh()
+      Apply(item)
+    end)
+    Tip(b, item.label, item.tip)
+    btns[#btns + 1] = b
+    prev = b
+  end
+  f.Refresh = function()
+    for _, b in ipairs(btns) do
+      local on = item.tbl[item.key] == b.value
+      if b.LockHighlight then if on then b:LockHighlight() else b:UnlockHighlight() end end
+      local fs = b.GetFontString and b:GetFontString()
+      if fs then
+        if on then fs:SetTextColor(ns.Style.Color("title")) else fs:SetTextColor(1, 1, 1) end
+      end
+    end
+  end
+  return f, 32
+end
+
 local function MakeCustom(parent, item) return item.build(parent, ROW_W - 20) end
 
-local MAKERS = { check = MakeCheck, slider = MakeSlider, button = MakeButton, header = MakeHeader, custom = MakeCustom, color = MakeColor }
+local MAKERS = { check = MakeCheck, slider = MakeSlider, button = MakeButton, header = MakeHeader, custom = MakeCustom, color = MakeColor, choice = MakeChoice }
 
 local function BuildPage(page)
   local c = CreateFrame("Frame", nil, win.scroll)
@@ -296,12 +339,12 @@ local function Build(pages)
     b:SetPoint("TOPLEFT", 12, y)
     local sel = b:CreateTexture(nil, "BACKGROUND")
     sel:SetAllPoints()
-    sel:SetColorTexture(0.22, 0.6, 0.81, 0.3)
+    ns.Style.Fill(sel, "accentSel", 0.3)
     sel:Hide()
     b.sel = sel
     local hl = b:CreateTexture(nil, "HIGHLIGHT")
     hl:SetAllPoints()
-    hl:SetColorTexture(0.47, 0.77, 0.93, 0.15)
+    ns.Style.Fill(hl, "accent", 0.15)
     local t = ns.Style.Text(b, 12)
     t:SetPoint("LEFT", 6, 0)
     t:SetText(page.name)

@@ -78,13 +78,13 @@ local function BuildSlot(parent, slot)
   b.time:SetPoint("TOP", b, "BOTTOM", 0, -1)
   local hl = b:CreateTexture(nil, "HIGHLIGHT")
   hl:SetAllPoints()
-  hl:SetColorTexture(0.47, 0.77, 0.93, 0.2)
+  ns.Style.Fill(hl, "accent", 0.2)
   b:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     if self.present and pcall(GameTooltip.SetTotem, GameTooltip, self.slot) then
       GameTooltip:AddLine("Right-click to take it down.", 0.6, 0.6, 0.6)
     else
-      GameTooltip:AddLine(ELEMENT[self.slot] .. " totem", 0.72, 0.79, 1)
+      GameTooltip:AddLine(ELEMENT[self.slot] .. " totem", ns.Style.Color("title"))
       GameTooltip:AddLine("None down.", 0.6, 0.6, 0.6)
     end
     GameTooltip:Show()

@@ -24,8 +24,8 @@ local function B(label, button, fn, tip)
   return { kind = "button", label = label, button = button, fn = fn, tip = tip }
 end
 local function H(text) return { kind = "header", label = text } end
-local function Col(tbl, key, label, default, tip)
-  return { kind = "color", tbl = tbl, key = key, label = label, default = default, tip = tip }
+local function Col(tbl, key, label, default, tip, reload)
+  return { kind = "color", tbl = tbl, key = key, label = label, default = default, tip = tip, reload = reload }
 end
 
 local SIZE_LABELS = {
@@ -60,6 +60,14 @@ function M.Pages()
     C(db.look, "classicColors", "WoW health and power colours", "Red health, Blizzard's mana/rage/energy colours. Off: XIUI's colours.", true),
     C(db.look, "hpBands", "Health changes colour as it drops", "XIUI's red, orange and yellow steps.", true),
     C(db.look, "rounded", "Rounded corners", "Softly rounded corners on every ForeverXIUI window.", true),
+    { kind = "choice", tbl = db.look, key = "theme", label = "Window colours", reload = true,
+      choices = { { "xi", "XI blue" }, { "wow", "WoW" }, { "dark", "Dark" }, { "custom", "Custom" } },
+      tip = "Same layouts and shapes on every ForeverXIUI window, in XI navy and blue, the game's charcoal and gold, or near-black and grey. Bar colours are set separately above. Custom uses the five colours below." },
+    Col(db.look.custom, "panelTop", "Custom: window top", { 0.024, 0.110, 0.224 }, "Top of every window's background (it fades into the bottom colour).", true),
+    Col(db.look.custom, "panelBottom", "Custom: window bottom", { 0.004, 0.071, 0.169 }, nil, true),
+    Col(db.look.custom, "edge", "Custom: edge", { 0.341, 0.424, 0.573 }, "The thin border; its lighter top line is worked out from it.", true),
+    Col(db.look.custom, "title", "Custom: titles", { 0.718, 0.788, 1.0 }, "Window titles, headers and page names.", true),
+    Col(db.look.custom, "accent", "Custom: highlights", { 0.47, 0.77, 0.93 }, "Hover and selected rows.", true),
     C(db.look, "shine", "Shine on bars", "The light gradient over the fills.", true),
     H("Layout"),
     B("Move frames", "Move", function() ns.Movers.Toggle() end,
@@ -140,7 +148,8 @@ function M.Pages()
     C(db.map, "square", "Square minimap", nil, true),
     C(db.map, "buttonColumn", "Minimap buttons along the map edge", "Blizzard's and your addons' minimap buttons, squared off and lined up down the map's left edge.", true),
     C(db.map, "coords", "Coordinates under the map", "On the strip with the zone and clock."),
-    C(db.map, "hideCalendar", "Hide the calendar button", "The day/night calendar button. Off: it sits with the other minimap buttons.", true),
+    C(db.map, "hideCalendar", "Hide the calendar button", "The calendar (date) button. Off: it sits with the other minimap buttons.", true),
+    C(db.map, "hideDayNight", "Hide the day/night icon", "The sun/moon icon. Off: it sits just right of the bag counter on top of the map."),
     H("Gold"),
     C(m, "gold", "Gold tracker", "Your gold on a strip on top of the minimap, with this session's change. Hover it for gold per hour and every character.", true),
     C(db.goldTracker, "onXP", "Gold under the EXP bar instead", "Puts the gold line back under the EXP bar.", true),
@@ -177,6 +186,10 @@ function M.Pages()
     C(db.bars, "dim", "Dim bar 1 while Shift is held"),
     C(db.bars, "glowBase", "Outline bar 1 when no key is held"),
     C(db, "hideBagBar", "Hide Blizzard bag bar", "B and your bag keys still open bags.", true),
+    H("Spell ranks"),
+    C(db.ranks, "enabled", "Swap in new spell ranks", "After you train a higher rank, every button with a lower rank of that spell gets the new one. Waits for combat to end. To keep a low rank on purpose, put the mouse over its button and type /fxiui ranks keep."),
+    C(db.ranks, "chat", "Say in chat when a rank is swapped"),
+    B("Check every button now", "Update now", function() local r = ns.modules.Ranks if r then r.Run(true) end end),
     H("Menu"),
     C(db, "menuSkin", "XI menu", "Replaces Blizzard's menu bar with an XI window.", true),
     C(db.menu, "vertical", "XI menu as a column", "FFXI's main menu layout.", true),
@@ -285,7 +298,7 @@ function M.Pages()
     C(h, "totems", "Hide Blizzard totem frame", "Only while the ForeverXIUI totem bar is on.", true),
     C(h, "boss", "Hide Blizzard boss frames", "The boss health frames on the right in boss fights. The enemy list shows bosses that have a nameplate near you.", true),
     C(h, "editBoxes", "No Minimap, Bags and menu boxes in Edit Mode", "Their boxes go invisible and click-through in Edit Mode. Move the minimap in ForeverXIUI's move mode instead.", true),
-    C(h, "objectives", "Swap the quest tracker with Polestar", "Blizzard's quest tracker hides while Polestar's guide window is showing and comes back when it isn't (in dungeons, or when you close Polestar)."),
+    C(h, "objectives", "Swap the quest tracker with a guide", "Blizzard's quest tracker hides while Polestar's or RestedXP's guide window is showing and comes back when neither is (in dungeons, or when you close the guide)."),
   })
 
   return pages
@@ -317,16 +330,19 @@ local function Help()
   print("  /fxiui chat  - re-stack the combat log on General and even out text size")
   print("  /fxiui chat 430 120  - size both chat windows (width height); /fxiui chat off - back to Edit Mode's size")
   print("  /fxiui map  - line the minimap buttons up again and show the minimap layout")
+  print("  /fxiui dump  - list the window under the mouse (or /fxiui dump FrameName) in a copy box")
   print("  /fxiui hide  - hide the box under the mouse (e.g. another addon's coordinates); /fxiui unhide to bring them back")
   print("  /fxiui meter  - list what the damage meter is made of (to fit its skin)")
   print("  /fxiui plater - set Plater up to be easier to read again; /fxiui plater undo puts your old settings back")
   print("  /fxiui check  - test what Forever lets addons read (run it in combat too)")
+  print("  /fxiui ranks  - put your highest spell ranks on your buttons now; /fxiui ranks keep (mouse over a button) keeps that rank; /fxiui ranks check lists what the game reports")
 end
 
 SLASH_FOREVERXIUI1 = "/fxiui"
 SLASH_FOREVERXIUI2 = "/foreverxiui"
 SlashCmdList.FOREVERXIUI = function(msg)
-  msg = (msg or ""):lower():match("^%s*(.-)%s*$")
+  local raw = (msg or ""):match("^%s*(.-)%s*$")   -- frame names keep their case
+  msg = raw:lower()
   if msg == "move" or msg == "unlock" or msg == "lock" then
     ns.Movers.Toggle()
   elseif msg == "reset" then
@@ -371,6 +387,8 @@ SlashCmdList.FOREVERXIUI = function(msg)
   elseif msg == "map" then
     local ms = ns.modules.MapSkin
     if ms and ms.Dump then ms.Dump() end
+  elseif msg:match("^dump") then
+    ns.DumpWindow(raw:match("^%S+%s+(%S+)"))
   elseif msg == "hide" then
     ns.HideUnderMouse()
   elseif msg == "unhide" then
@@ -397,6 +415,12 @@ SlashCmdList.FOREVERXIUI = function(msg)
     end
   elseif msg == "check" then
     ns.Check()
+  elseif msg:match("^ranks?") then
+    local r = ns.modules.Ranks
+    if not r then return end
+    if msg:match("keep$") then r.ToggleKeep()
+    elseif msg:match("check$") then r.Report()
+    else r.Run(true) end
   elseif msg == "help" then
     Help()
   else

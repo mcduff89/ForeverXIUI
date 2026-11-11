@@ -69,7 +69,7 @@ local function Square(b)
   -- A small square XI tile behind the icon.
   if not b.fxiTile then
     local t = b:CreateTexture(nil, "BACKGROUND", nil, -8)
-    t:SetColorTexture(0.02, 0.07, 0.16, 0.9)
+    ns.Style.Fill(t, "mapBack", 0.9)
     t:SetPoint("CENTER")
     local size = math.min(b:GetWidth() or 31, b:GetHeight() or 31) * 0.72
     t:SetSize(size, size)
@@ -100,6 +100,12 @@ local function Skip(b)
   -- Map pins (GatherLite's 12px node markers and the like) are not buttons.
   local name = b:GetName() or ""
   if name:find("^GatherLite%d") then return true end
+  if name:find("^TomTom") then return true end
+  -- Waypoint and node pins placed through HereBeDragons (TomTom, Questie,
+  -- gathering addons): they belong on the map, not in the button column.
+  local hbd = LibStub and LibStub("HereBeDragons-Pins-2.0", true)
+  if hbd and type(hbd.minimapPins) == "table" and hbd.minimapPins[b] then return true end
+  if rawget(b, "point") ~= nil and (rawget(b, "arrow") ~= nil or rawget(b, "icon") ~= nil) then return true end   -- TomTom
   local w = b:GetWidth() or 0
   return w < 20 or w > 48
 end
@@ -155,6 +161,103 @@ function M.TuckTracking(t)
   PutTracking()
 end
 
+-- The mail (and crafting order) icons: Blizzard keeps them in
+-- MinimapCluster.IndicatorFrame, which stays where the old cluster was
+-- (top middle of the screen) once the map moves. They go just left of the
+-- gold strip on top of the map (or the map's top-left corner without it).
+-- Small icons left in the map's holder frame (the day/night icon on
+-- Forever) go just right of the strip, or are hidden ("Hide the day/night
+-- icon").
+local putting = false
+local extras = {}
+
+local function GoldStrip()
+  local g = _G.ForeverXIUIGold
+  if type(g) == "table" and g:IsShown() then return g end
+end
+
+local function OverMap(f)
+  local strata, level = Minimap:GetFrameStrata(), Minimap:GetFrameLevel() + 10
+  f:SetFrameStrata(strata)
+  f:SetFrameLevel(level)
+  for _, child in ipairs({ f:GetChildren() }) do
+    pcall(child.SetFrameStrata, child, strata)
+    pcall(child.SetFrameLevel, child, level + 1)
+  end
+end
+
+local function PutIndicator()
+  if putting or not Minimap then return end
+  putting = true
+  local g = GoldStrip()
+  local f = M.indicator
+  if f then
+    pcall(function()
+      if f:GetParent() ~= Minimap then f:SetParent(Minimap) end
+      f:ClearAllPoints()
+      if g then
+        f:SetPoint("RIGHT", g, "LEFT", -3, 0)
+      else
+        f:SetPoint("TOPLEFT", Minimap, "TOPLEFT", 3, -3)
+      end
+      OverMap(f)
+    end)
+  end
+  local prev = g
+  for _, e in ipairs(extras) do
+    pcall(function()
+      if ns.db.map.hideDayNight then
+        e:SetAlpha(0)
+        if e.EnableMouse then e:EnableMouse(false) end
+        return
+      end
+      e:SetAlpha(1)
+      if e:GetParent() ~= Minimap then e:SetParent(Minimap) end
+      local h = math.max(e:GetHeight() or 0, 1)
+      e:SetScale(math.min(1, 20 / h))
+      e:ClearAllPoints()
+      if prev then
+        e:SetPoint("LEFT", prev, "RIGHT", 3, 0)
+      else
+        e:SetPoint("TOPRIGHT", Minimap, "TOPRIGHT", -3, -(Slot() + 6))
+      end
+      OverMap(e)
+      prev = e
+    end)
+  end
+  putting = false
+end
+M.PutIndicator = PutIndicator
+
+function M.TuckIndicator(f)
+  if M.indicator == f then return end
+  M.indicator = f
+  buttons[f] = nil
+  hooksecurefunc(f, "SetPoint", function() if not putting then PutIndicator() end end)
+  PutIndicator()
+end
+
+-- Small leftovers in the map's holder frame (not the map, not our frames,
+-- not Forever's coordinates or the lined-up buttons).
+local function TuckExtras()
+  local holder = Minimap.GetParent and Minimap:GetParent()
+  if type(holder) ~= "table" or holder == UIParent or holder == MinimapCluster or not holder.GetChildren then return end
+  local coords = rawget(holder, "PlayerCoords")
+  for _, c in ipairs({ holder:GetChildren() }) do
+    if c ~= Minimap and c ~= coords and not c.fxiOurs and not buttons[c] and c ~= M.tracking
+      and c ~= M.indicator and not c.fxiExtra then
+      local w, h = c:GetWidth() or 0, c:GetHeight() or 0
+      if w >= 10 and w <= 48 and h >= 10 and h <= 48 then
+        c.fxiExtra = true
+        extras[#extras + 1] = c
+        hooksecurefunc(c, "SetPoint", function() if not putting then PutIndicator() end end)
+      end
+    end
+  end
+  PutIndicator()
+end
+M.TuckExtras = TuckExtras
+
 local function Collect()
   for _, root in ipairs({ Minimap, MinimapCluster, _G.MinimapBackdrop }) do
     if type(root) == "table" and root.GetChildren then
@@ -193,7 +296,13 @@ local function Collect()
     local tracking = rawget(cluster, "Tracking") or _G.MiniMapTracking
     if type(tracking) == "table" and (tracking.GetWidth and (tracking:GetWidth() or 0) >= 10) then M.TuckTracking(tracking) end
   end
-  if type(_G.MiniMapMailFrame) == "table" then Take(_G.MiniMapMailFrame, true) end
+  pcall(TuckExtras)
+  local indicator = cluster and rawget(cluster, "IndicatorFrame")
+  if type(indicator) == "table" and indicator.SetPoint then
+    M.TuckIndicator(indicator)
+  elseif type(_G.MiniMapMailFrame) == "table" then
+    Take(_G.MiniMapMailFrame, true)
+  end
   -- LibDBIcon keeps its buttons in a list; some addons parent them elsewhere.
   local lib = LibStub and LibStub("LibDBIcon-1.0", true)
   if lib and type(lib.objects) == "table" then
@@ -245,6 +354,7 @@ Layout = function()
   end)
   placing = false
   PutTracking()
+  PutIndicator()
   if not ok then
     M.errors = M.errors or {}
     M.errors.layout = tostring(err)
@@ -342,7 +452,7 @@ local function ClickZone(parent, target)
   end
   local hl = b:CreateTexture(nil, "HIGHLIGHT")
   hl:SetAllPoints()
-  hl:SetColorTexture(0.47, 0.77, 0.93, 0.15)
+  ns.Style.Fill(hl, "accent", 0.15)
   return b
 end
 

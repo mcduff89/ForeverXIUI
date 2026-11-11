@@ -75,7 +75,7 @@ function M.Enabled() return ns.db.modules.gold and true or false end
 -- Added to the bottom of the EXP bar's tooltip.
 function M.AddTooltip()
   GameTooltip:AddLine(" ")
-  GameTooltip:AddLine("Gold", 0.72, 0.79, 1)
+  GameTooltip:AddLine("Gold", ns.Style.Color("title"))
   local money = GetMoney() or 0
   local change = money - session.money
   GameTooltip:AddDoubleLine("This session", Signed(change), 1, 1, 1)
@@ -186,6 +186,9 @@ local function BuildStrip()
   end
   Draw(f)
   M.frame = f
+  -- The mail and day/night icons sit at the strip's ends.
+  local ms = ns.modules.MapSkin
+  if ms and ms.PutIndicator then pcall(ms.PutIndicator) end
 end
 
 function M:Init()

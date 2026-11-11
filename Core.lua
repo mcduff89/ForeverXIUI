@@ -3,7 +3,7 @@
 local ADDON, ns = ...
 
 ns.name = ADDON
-ns.version = "1.4.9"
+ns.version = "1.4.19"
 ns.DB_VERSION = 5
 
 -- Defaults. New keys are filled in on load, so adding one here is safe for
@@ -41,7 +41,7 @@ ns.defaults = {
     raid = true,
     xp = true,           -- Blizzard's XP/reputation bar (only while ForeverXIUI's EXP bar is on)
     totems = true,       -- Blizzard's totem frame by the player frame (while the totem bar is on)
-    objectives = true,   -- Blizzard's quest tracker hides while Polestar's window shows
+    objectives = true,   -- Blizzard's quest tracker hides while Polestar's or RestedXP's window shows
     editBoxes = true,    -- no Minimap / Bags boxes in Edit Mode (move the map with /fxiui move)
     boss = false,        -- Blizzard's boss frames (the enemy list covers them)
   },
@@ -142,6 +142,7 @@ ns.defaults = {
     scale = 1,           -- map size (the slider in the options)
     buttonSize = 22,     -- minimap button size
     hideCalendar = false, -- put away the calendar (day/night) button
+    hideDayNight = false, -- the sun/moon icon: hidden, or just right of the bag counter
   },
   hideBagBar = true,
   look = {
@@ -149,6 +150,14 @@ ns.defaults = {
     hpBands = false,      -- XIUI's red/orange/yellow steps as health drops
     shine = false,        -- the light gradient over bar fills
     rounded = true,       -- rounded corners on every window
+    theme = "xi",         -- window colours: "xi" (navy and blue), "wow" (charcoal and gold), "dark" (near-black and grey), "custom"
+    custom = {            -- the "custom" theme's colours (start as XI blue)
+      panelTop    = { r = 0.024, g = 0.110, b = 0.224 },
+      panelBottom = { r = 0.004, g = 0.071, b = 0.169 },
+      edge        = { r = 0.341, g = 0.424, b = 0.573 },
+      title       = { r = 0.718, g = 0.788, b = 1.0 },
+      accent      = { r = 0.47, g = 0.77, b = 0.93 },
+    },
   },
   bars = {
     enabled = true,      -- XI window behind action bars 1-3
@@ -189,6 +198,11 @@ ns.defaults = {
   },
   raid = {
     hideOwnGroup = true, -- your own group is already in the party list
+  },
+  ranks = {
+    enabled = true,      -- put your highest spell rank on buttons that have a lower one (out of combat)
+    chat = true,         -- say in chat which spells were swapped
+    keep = {},           -- spellIDs kept at that exact rank (/fxiui ranks keep)
   },
   hidden = {},           -- other addons' frames hidden with /fxiui hide, by name
   positions = {},        -- filled by the movers; empty means "use the default"
@@ -369,6 +383,9 @@ ns.On("ADDON_LOADED", function(_, name)
   FillDefaults(ForeverXIUIDB, ns.defaults)
   ForeverXIUIDB.dbVersion = ns.DB_VERSION
   ns.db = ForeverXIUIDB
+  if ns.db.look.wowTheme then ns.db.look.theme = "wow" end   -- 1.4.15's tickbox
+  ns.db.look.wowTheme = nil
+  ns.Style.ApplyTheme(ns.db.look.theme, ns.db.look.custom)
 end)
 
 ns.On("PLAYER_LOGIN", function()

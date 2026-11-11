@@ -1,4 +1,4 @@
-# ForeverXIUI 1.4.9
+# ForeverXIUI 1.4.19
 
 An FFXI-style UI for WoW Forever, inspired by XIUI's look: navy windows with thin steel edges and clean bars, for the player, target, cast bars, party, raid, minimap, menu, EXP bar, bags and more. Everything can be moved, sized and switched off. Not affiliated with XIUI; no XIUI code or art is used.
 
@@ -51,7 +51,7 @@ Solo, out of combat:
 2. Extract it into `World of Warcraft\_forever_\Interface\AddOns\`, so you have `AddOns\ForeverXIUI\ForeverXIUI.toc`.
 3. Start the game. Type `/fxiui` for options. To also get the Duff Edit Mode layout, load the Duff profile from the Profiles page.
 
-Works on its own. Optional extras it skins or reads from: Baganator, Auctionator, Plater, Polestar.
+Works on its own. Optional extras it skins or reads from: Baganator, Auctionator, Plater, Polestar, RestedXP.
 
 ## Commands
 - `/fxiui` opens the ForeverXIUI options window (also Esc > Options > AddOns > ForeverXIUI > Open).
@@ -68,6 +68,7 @@ Works on its own. Optional extras it skins or reads from: Baganator, Auctionator
 - `/fxiui meter` opens a copy box with what the damage meter is made of, so its skin can be fitted.
 - `/fxiui plater` sets Plater up to be easier to read again; `/fxiui plater undo` puts your old Plater settings back.
 - `/fxiui check` reports what Forever lets addons read. Run it out of combat and in combat with a mob targeted.
+- `/fxiui ranks` puts your highest spell ranks on your buttons now (it also happens by itself after training). `/fxiui ranks keep` with the mouse over a button keeps that exact rank; again to undo. `/fxiui ranks check` opens a copy box with what the game reports about your ranks.
 
 ## Modules
 | Module | What it shows |
@@ -79,6 +80,7 @@ Works on its own. Optional extras it skins or reads from: Baganator, Auctionator
 | Raid list | Other raid groups on the right edge, compact |
 | Menu skin | Hides Blizzard's bag bar (on by default); optional XI window behind the micro menu (off) |
 | Action bars | XI window behind bars 1 and 2 (optional Shift highlight, off) |
+| Spell ranks | After training, buttons with an old spell rank get the new one (out of combat). Keep a low rank with `/fxiui ranks keep` |
 | Totem bar | Shamans: your four totems with icon, swipe and time left. Right-click one to take it down |
 | Swing timer | Slim bar from one melee swing to the next, time left on the right |
 | Gold | A strip on top of the minimap: your gold and this session's change. Hover for gold per hour and every character |
@@ -113,6 +115,16 @@ Health, power and other units' casts can be "secret" in combat. ForeverXIUI neve
 - 1.4.7 (2026-11-08): Gathering options on the Nameplates & tooltip page: Interact picks the nearest object all around you up to 30 yards, and the interact icon shows over herbs, ore and objects. Both on; turning one off puts your old game settings back.
 - 1.4.8 (2026-11-08): Group tools (role and ready checks, countdown, raid markers, Leave Party) move from the top left to a "Group tools" tab above the party list that opens upward, in the XI look. Option on the Party & raid page.
 - 1.4.9 (2026-11-08): Group tools open by clicking the "Party" title on the party list (a +/- beside it) instead of a separate tab.
+- 1.4.10 (2026-11-09): The mail icon (and crafting order icon) no longer floats at the top middle of the screen where the old minimap was; it sits inside the map's top-left corner.
+- 1.4.11 (2026-11-09): Mail icon sits just left of the gold counter on top of the map; the day/night icon just right of the bag counter, or hidden with "Hide the day/night icon".
+- 1.4.12 (2026-11-09): TomTom waypoints and other map pins (HereBeDragons) are no longer pulled into the minimap button column.
+- 1.4.13 (2026-11-10): The quest tracker also hides while the RestedXP guide window is showing, the same as with Polestar.
+- 1.4.14 (2026-11-10): /fxiui dump lists the window under the mouse (or /fxiui dump FrameName) in a copy box, for fitting the XI look to Blizzard's windows.
+- 1.4.15 (2026-11-10): "WoW colours for windows" (General page): every ForeverXIUI window keeps its layout and shape but in the game's charcoal and gold instead of XI navy and blue. Needs a /reload.
+- 1.4.16 (2026-11-10): "Window colours" picker on the General page: XI blue, WoW (charcoal and gold) or Dark (near-black and grey), same layouts and shapes on every window. Replaces 1.4.15's tickbox. Needs a /reload.
+- 1.4.17 (2026-11-10): "Custom" window colours: pick your own window top, bottom, edge, titles and highlights with the game's colour picker (General page). Needs a /reload.
+- 1.4.18 (2026-11-10): /fxiui dump finds the window under the mouse even while typing in chat, shows its box above every window, and reports a problem instead of failing silently.
+- 1.4.19 (2026-11-10): spell ranks. After you train a higher rank, every action button with a lower rank of that spell gets the new one, once combat ends. `/fxiui ranks keep` with the mouse over a button keeps that exact rank (for downranking). On/off and "Update now" on the Action bars page. Untested in game.
 - 1.1.2 (2026-11-08): The quest tracker now swaps with Polestar's guide window: hidden while PolestarGuideFrame is showing, back when it isn't (dungeons, or Polestar closed). Changes wait until out of combat.
 - 1.1.1 (2026-11-08): Blizzard's quest/objective tracker is hidden while Polestar is loaded (Blizzard frames: "Hide Blizzard quest tracker while Polestar is on"). Hidden out of combat and again whenever the game shows it.
 - 1.1.0 (2026-11-08): Profile.lua (new): profile export/import. One line of text with every ForeverXIUI setting (sizes, positions, options) and the active Edit Mode layout. Import replaces the settings (keeps this PC's gold totals), adds the Edit Mode layout as a new account layout "FXI <date>" and makes it active, then reloads. /fxiui export, /fxiui import, or the buttons on the main options page.

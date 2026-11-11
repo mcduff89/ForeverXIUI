@@ -136,7 +136,7 @@ local function SkinItem(button)
   local nt = button.GetNormalTexture and button:GetNormalTexture()
   if nt then Fade(nt) end
   if button.SlotBackground then
-    button.SlotBackground:SetColorTexture(0.06, 0.08, 0.16, 0.85)
+    ns.Style.Fill(button.SlotBackground, "slotBack", 0.85)
     -- Always show the slot square, even with Baganator's "Hide icon
     -- backgrounds" ticked, so empty slots never vanish.
     local sb = button.SlotBackground
@@ -166,7 +166,7 @@ local function SkinButton(button)
   if not any then return end
   if button.GetHighlightTexture then
     local hl = button:GetHighlightTexture()
-    if hl then hl:SetColorTexture(0.47, 0.77, 0.93, 0.18) end
+    if hl then ns.Style.Fill(hl, "accent", 0.18) end
   end
   local back = CreateFrame("Frame", nil, button)
   back.fxiOurs = true

@@ -43,8 +43,8 @@ local function Deafen(frame)
   end
 end
 
--- The quest/objective tracker swaps with Polestar's guide window: hidden
--- while Polestar's window is showing, back as soon as it isn't (Polestar
+-- The quest/objective tracker swaps with a guide window (Polestar or
+-- RestedXP): hidden while one is showing, back as soon as none is (Polestar
 -- hides its window in dungeons, for one). The tracker holds clickable
 -- quest-item buttons, so it's hidden outright rather than faded (no
 -- invisible buttons to mis-click), and only changed out of combat.
@@ -52,13 +52,19 @@ local TRACKERS = { "ObjectiveTrackerFrame", "WatchFrame", "QuestWatchFrame" }
 local hiddenByUs = {}
 local trackerHooked = {}
 
-local function PolestarShowing()
-  local f = _G.PolestarGuideFrame
-  return type(f) == "table" and f.IsVisible and f:IsVisible() and (f:GetAlpha() or 1) > 0.05 or false
+-- Guide windows that take the tracker's place: Polestar's and RestedXP's.
+local GUIDES = { "PolestarGuideFrame", "RXPFrame" }
+
+local function GuideShowing()
+  for _, name in ipairs(GUIDES) do
+    local f = _G[name]
+    if type(f) == "table" and f.IsVisible and f:IsVisible() and (f:GetAlpha() or 1) > 0.05 then return true end
+  end
+  return false
 end
 
 local function WantTrackerHidden()
-  return ns.db.hideBlizzard.objectives ~= false and PolestarShowing()
+  return ns.db.hideBlizzard.objectives ~= false and GuideShowing()
 end
 
 local function SyncTrackers()
@@ -89,7 +95,7 @@ M.SyncTrackers = SyncTrackers
 local function HideTrackers()
   if M.trackerTicker then return end
   SyncTrackers()
-  -- Polestar opens and closes its window itself (dungeons, its own close
+  -- The guides open and close their windows themselves (dungeons, its own close
   -- button), so check twice a second; it's only a couple of IsVisible calls.
   M.trackerTicker = C_Timer.NewTicker(0.5, SyncTrackers)
   ns.On("PLAYER_REGEN_ENABLED", SyncTrackers)

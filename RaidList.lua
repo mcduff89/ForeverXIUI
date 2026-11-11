@@ -58,7 +58,7 @@ local function BuildRow(parent, i)
 
   local hl = row:CreateTexture(nil, "HIGHLIGHT")
   hl:SetAllPoints()
-  hl:SetColorTexture(0.47, 0.77, 0.93, 0.12)
+  ns.Style.Fill(hl, "accent", 0.12)
 
   BuildParts(row)
   ns.UnitTooltip(row)

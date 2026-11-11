@@ -158,7 +158,7 @@ local function BuildEntry(win, label, target, overlay, icon)
   end
   e.hl = e:CreateTexture(nil, "OVERLAY")
   e.hl:SetAllPoints()
-  e.hl:SetColorTexture(0.47, 0.77, 0.93, 0.18)
+  ns.Style.Fill(e.hl, "accent", 0.18)
   e.hl:Hide()
   e:SetScript("OnEnter", function(self) Paint(self, true) end)
   e:SetScript("OnLeave", function(self) Paint(self, false) end)

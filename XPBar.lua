@@ -176,7 +176,7 @@ end
 
 local function Tooltip(f)
   GameTooltip:SetOwner(f, "ANCHOR_TOP")
-  GameTooltip:AddLine(("Level %d experience"):format(state.level), 0.72, 0.79, 1)
+  GameTooltip:AddLine(("Level %d experience"):format(state.level), ns.Style.Color("title"))
   GameTooltip:AddDoubleLine("Current", ("%s / %s"):format(Num(state.xp), Num(state.max)), 1, 1, 1, 1, 1, 1)
   GameTooltip:AddDoubleLine("To level", Num(state.max - state.xp), 1, 1, 1, 1, 1, 1)
   if state.rested > 0 then GameTooltip:AddDoubleLine("Rested", Num(state.rested), 1, 1, 1, 0.56, 0.72, 1) end
