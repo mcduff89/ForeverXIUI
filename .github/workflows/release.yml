@@ -1,8 +1,7 @@
-# Makes a GitHub release whenever the version in ForeverXIUI.toc changes.
-# Push as usual from GitHub Desktop: if "## Version" is new, this builds
-# ForeverXIUI-<version>.zip (one ForeverXIUI folder with only the files the
-# game needs) and publishes it as release v<version>. Pushes that don't
-# change the version do nothing.
+# Makes a GitHub release whenever the version in ForeverXIUI/ForeverXIUI.toc changes.
+# Push as usual from GitHub Desktop: if "## Version" is new, this zips the ForeverXIUI
+# addon folder (plus README and LICENSE, no backups) as ForeverXIUI-<version>.zip and
+# publishes it as release v<version>. Pushes that don't change the version do nothing.
 name: Release
 
 on:
@@ -22,7 +21,7 @@ jobs:
       - name: Read version
         id: v
         run: |
-          version=$(grep -m1 '^## Version:' ForeverXIUI.toc | sed 's/^## Version:[[:space:]]*//' | tr -d '\r')
+          version=$(grep -m1 '^## Version:' ForeverXIUI/ForeverXIUI.toc | sed 's/^## Version:[[:space:]]*//' | tr -d '\r')
           echo "version=$version" >> "$GITHUB_OUTPUT"
           if gh release view "v$version" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
@@ -35,19 +34,20 @@ jobs:
       - name: Build zip
         if: steps.v.outputs.exists == 'false'
         run: |
-          mkdir -p build/ForeverXIUI/media
-          grep -v '^#' ForeverXIUI.toc | tr -d '\r' | grep '\.lua$' | while read -r f; do
-            cp "$f" build/ForeverXIUI/
-          done
-          cp ForeverXIUI.toc README.md build/ForeverXIUI/
-          cp media/* build/ForeverXIUI/media/
+          mkdir -p build
+          cp -r ForeverXIUI build/
+          cp README.md LICENSE build/ForeverXIUI/
+          find build -name '*_backup.*' -delete
           cd build && zip -qr "../ForeverXIUI-${{ steps.v.outputs.version }}.zip" ForeverXIUI
 
       - name: Publish release
         if: steps.v.outputs.exists == 'false'
         run: |
           v="${{ steps.v.outputs.version }}"
-          notes=$(grep -m1 "^- $v " README.md || echo "ForeverXIUI $v")
+          change=$(grep -m1 "^- $v " README.md || echo "ForeverXIUI $v")
+          repo="https://github.com/${{ github.repository }}"
+          raw="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}"
+          notes=$(printf '%s\n\n![ForeverXIUI](%s/screenshots/overview.jpg)\n\n**Install:** download `ForeverXIUI-%s.zip` below and extract it into `World of Warcraft\\_forever_\\Interface\\AddOns`. Screenshots and every feature: [README](%s#readme)\n' "$change" "$raw" "$v" "$repo")
           gh release create "v$v" "ForeverXIUI-$v.zip" --title "ForeverXIUI $v" --notes "$notes"
         env:
           GH_TOKEN: ${{ github.token }}
