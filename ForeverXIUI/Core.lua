@@ -3,7 +3,7 @@
 local ADDON, ns = ...
 
 ns.name = ADDON
-ns.version = "1.4.19"
+ns.version = "1.4.30"
 ns.DB_VERSION = 5
 
 -- Defaults. New keys are filled in on load, so adding one here is safe for
@@ -47,6 +47,10 @@ ns.defaults = {
   },
   totems = {
     anyClass = false,    -- show the totem bar on non-shamans too
+    range = true,        -- red shade + X on a totem whose buff you don't have (out of range)
+    distance = true,     -- yards from each totem above its icon (open world only), red past its range
+    circle = true,       -- a disc on the minimap showing your totems' range (open world only)
+    buffs = {},          -- totems seen giving a buff (learned; only these get marked)
   },
   swing = {
     alwaysShow = false,  -- keep the swing bar faintly visible out of combat
@@ -119,6 +123,15 @@ ns.defaults = {
     autoSell = true,     -- show the sell-junk window when a vendor opens
     keep = {},           -- itemIDs you unticked: never junk
   },
+  restock = {
+    enabled = true,      -- log limited-stock vendor items, alert and buy on a press
+    wantMine = true,     -- limited recipes for your professions you don't know count as wanted
+    wantAll = false,     -- every limited recipe counts as wanted (to sell or for later)
+    alert = true,        -- sound + raid-warning line when a wanted item is in stock
+    highlight = true,    -- gold edge on wanted items in the vendor window
+    panel = true,        -- the Limited stock window beside the vendor
+    wheel = false,       -- mouse wheel buys one wanted item per notch while a vendor is open
+  },
   bagDots = {
     columns = 20,        -- dots per row
     window = true,       -- XI panel behind the dots
@@ -143,6 +156,8 @@ ns.defaults = {
     buttonSize = 22,     -- minimap button size
     hideCalendar = false, -- put away the calendar (day/night) button
     hideDayNight = false, -- the sun/moon icon: hidden, or just right of the bag counter
+    buttonOrder = {},     -- minimap buttons by key, in the order picked on the options page
+    hiddenButtons = {},   -- minimap buttons put away from the options page (key -> true)
   },
   hideBagBar = true,
   look = {
@@ -203,6 +218,9 @@ ns.defaults = {
     enabled = true,      -- put your highest spell rank on buttons that have a lower one (out of combat)
     chat = true,         -- say in chat which spells were swapped
     keep = {},           -- spellIDs kept at that exact rank (/fxiui ranks keep)
+  },
+  macros = {
+    attack = true,       -- make "+Spell" macros (/startattack then the spell) for your attack spells
   },
   hidden = {},           -- other addons' frames hidden with /fxiui hide, by name
   positions = {},        -- filled by the movers; empty means "use the default"

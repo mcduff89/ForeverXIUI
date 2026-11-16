@@ -311,3 +311,145 @@ function M:Init()
   -- Catch ranks trained before this was installed (or on another bar set).
   C_Timer.After(3, function() M.Run(false) end)
 end
+
+---------------------------------------------------------------------------
+-- Ready-made macros: "#showtooltip /startattack /cast <spell>" for your
+-- class's attack spells, so casting one also starts auto attack. Made per
+-- character (in /macro's character tab) on login or /reload, out of combat,
+-- and only for spells you know. Our macros start with "+" so your own are
+-- never touched. They're real saved macros (the game keeps them, addon or
+-- not); we only make missing ones once and update ours if this list changes.
+-- "Make now" (/fxiui macros) brings back deleted ones and resets edited ones. No rank in the macro, so it always casts your highest rank.
+---------------------------------------------------------------------------
+local Mac = ns.AddModule("Macros")
+
+local ATTACKS = {
+  -- Every offensive Shaman spell, including later ones and the ones only
+  -- some versions have; a macro is only made once you know the spell.
+  SHAMAN = { "Lightning Bolt", "Earth Shock", "Flame Shock", "Frost Shock", "Chain Lightning",
+    "Stormstrike", "Fire Nova", "Purge", "Lava Lash", "Lava Burst", "Primal Strike" },
+  WARRIOR = { "Heroic Strike", "Rend", "Sunder Armor" },
+  PALADIN = { "Judgement", "Crusader Strike" },
+  HUNTER = { "Raptor Strike", "Wing Clip" },
+  ROGUE = { "Sinister Strike", "Eviscerate" },
+  DRUID = { "Wrath", "Moonfire" },
+}
+
+local function Known(name)
+  local id
+  if C_Spell and C_Spell.GetSpellInfo then
+    local info = C_Spell.GetSpellInfo(name)
+    id = info and info.spellID
+  elseif GetSpellInfo then
+    id = select(7, GetSpellInfo(name))
+  end
+  if id then
+    if IsPlayerSpell and IsPlayerSpell(id) then return true end
+    if IsSpellKnown and IsSpellKnown(id) then return true end
+    if not IsPlayerSpell and not IsSpellKnown then return true end
+  end
+  -- A name can map to another spell with the same name (an NPC version,
+  -- another rank), so look for it in your spellbook as well.
+  local book = C_SpellBook
+  local bank = Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player
+  if book and book.GetNumSpellBookSkillLines and book.GetSpellBookSkillLineInfo and book.GetSpellBookItemName and bank then
+    for line = 1, book.GetNumSpellBookSkillLines() do
+      local info = book.GetSpellBookSkillLineInfo(line)
+      if info and not info.shouldHide then
+        for i = info.itemIndexOffset + 1, info.itemIndexOffset + info.numSpellBookItems do
+          if book.GetSpellBookItemName(i, bank) == name then return true end
+        end
+      end
+    end
+  end
+  return false
+end
+
+local function Body(spell) return "#showtooltip\n/startattack\n/cast " .. spell end
+
+-- Utility macros: name, the spell they need (nil = always), and the text
+-- (a function, so it can pick the best spell you have when it runs).
+-- These take the place of the plain "+Spell" macro of the same name.
+local UTILITY = {
+  SHAMAN = {
+    { name = "+Interrupt", needs = "Earth Shock", body = function()
+      local s = Known("Wind Shear") and "Wind Shear" or "Earth Shock"
+      return "#showtooltip " .. s .. "\n/cast [@focus,exists,harm,nodead] " .. s .. "; " .. s
+    end },
+    { name = "+Purge", needs = "Purge", body = function()
+      return "#showtooltip Purge\n/cast [@mouseover,exists,harm,nodead] Purge; Purge"
+    end },
+    { name = "+Ankh", body = function()
+      return "#showtooltip item:17030\n/run local n=(C_Item and C_Item.GetItemCount or GetItemCount)(17030) print(\"Ankhs: \"..n)"
+    end },
+  },
+}
+
+-- What we last wrote, per character: name -> body. A macro we made that
+-- is now gone was deleted by you, so it isn't made again; one whose text
+-- you changed is left alone.
+local function Mine()
+  local who = (UnitName("player") or "?") .. "-" .. (GetRealmName and GetRealmName() or "?")
+  ns.db.macros.made = ns.db.macros.made or {}
+  ns.db.macros.made[who] = ns.db.macros.made[who] or {}
+  return ns.db.macros.made[who]
+end
+
+function Mac.Run(verbose, force)
+  if type(CreateMacro) ~= "function" or type(GetMacroIndexByName) ~= "function" then
+    if verbose then ns.Print("macros: this client doesn't let addons make macros.") end
+    return
+  end
+  ns.AfterCombat("macros", function()
+    local _, class = UnitClass("player")
+    local mine = Mine()
+    local made, fixed, full = {}, 0, false
+    local todo, taken = {}, {}
+    for _, u in ipairs(UTILITY[class] or {}) do
+      taken[u.name] = true
+      if not u.needs or Known(u.needs) then
+        todo[#todo + 1] = { name = u.name, body = u.body() }
+      elseif verbose then
+        ns.Print("macros: %s skipped, the game doesn't list %s as known.", u.name, u.needs)
+      end
+    end
+    for _, spell in ipairs(ATTACKS[class] or {}) do
+      local name = ("+" .. spell):sub(1, 16)
+      if not taken[name] and Known(spell) then todo[#todo + 1] = { name = name, body = Body(spell) } end
+    end
+    for _, t in ipairs(todo) do
+      do
+        local name, want = t.name, t.body
+        local idx = GetMacroIndexByName(name)
+        if idx and idx > 0 then
+          local _, _, body = GetMacroInfo(idx)
+          body = body and body:gsub("%s+$", "")
+          if body ~= want and (force or body == mine[name]) then
+            pcall(EditMacro, idx, nil, nil, want)
+            mine[name] = want
+            fixed = fixed + 1
+          end
+        elseif force or mine[name] == nil then
+          local ok, id = pcall(CreateMacro, name, "INV_Misc_QuestionMark", want, true)
+          if ok and id then made[#made + 1] = name; mine[name] = want else full = true end
+        end
+      end
+    end
+    if #made > 0 then ns.Print("made macros %s (in /macro, character tab). Drag them onto your bars.", table.concat(made, ", ")) end
+    if full then ns.Print("macros: couldn't make all of them (character macro slots full?).") end
+    if verbose and #made == 0 and not full then ns.Print("macros: all up to date%s.", fixed > 0 and (" (" .. fixed .. " updated)") or "") end
+  end)
+end
+
+function Mac:Init()
+  if not (ns.db.macros and ns.db.macros.attack) then return end
+  C_Timer.After(4, function() Mac.Run(false) end)
+  -- A newly trained spell gets its macro right away (once).
+  local f, waiting = CreateFrame("Frame"), false
+  for _, ev in ipairs({ "LEARNED_SPELL_IN_SKILL_LINE", "LEARNED_SPELL_IN_TAB" }) do pcall(f.RegisterEvent, f, ev) end
+  f:SetScript("OnEvent", function()
+    if waiting then return end
+    waiting = true
+    C_Timer.After(2, function() waiting = false; Mac.Run(false) end)
+  end)
+end

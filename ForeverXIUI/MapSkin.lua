@@ -112,6 +112,41 @@ end
 
 local Layout
 
+-- Each button's lasting name: LibDBIcon's addon name, or the frame name.
+-- Unnamed buttons can't be remembered, so they can't be ordered or hidden.
+local function Key(b)
+  return rawget(b, "fxiKey") or b:GetName()
+end
+M.Key = Key
+
+local function Label(b)
+  local k = Key(b)
+  if not k then return "(unnamed button)" end
+  k = k:gsub("^LibDBIcon10_", ""):gsub("MinimapButton$", ""):gsub("^MiniMap", ""):gsub("Minimap", "")
+  if k == "GameTimeFrame" then return "Calendar" end
+  if k == "QueueStatusButton" then return "Looking for group eye" end
+  return k
+end
+M.Label = Label
+
+local function IsHidden(b)
+  local k = Key(b)
+  return k ~= nil and ns.db.map.hiddenButtons[k] == true
+end
+
+-- Order: the saved list first, then the rest by name.
+local function SortButtons(list)
+  local rank = {}
+  for i, k in ipairs(ns.db.map.buttonOrder) do rank[k] = i end
+  table.sort(list, function(a, b)
+    local ka, kb = Key(a) or "~", Key(b) or "~"
+    local ra, rb = rank[ka] or 10000, rank[kb] or 10000
+    if ra ~= rb then return ra < rb end
+    return ka < kb
+  end)
+  return list
+end
+
 local function Take(b, anyKind)
   if type(b) ~= "table" or buttons[b] or not b.GetObjectType then return end
   if not anyKind and (not IsButton(b) or Skip(b)) then return end
@@ -306,7 +341,12 @@ local function Collect()
   -- LibDBIcon keeps its buttons in a list; some addons parent them elsewhere.
   local lib = LibStub and LibStub("LibDBIcon-1.0", true)
   if lib and type(lib.objects) == "table" then
-    for _, b in pairs(lib.objects) do if type(b) == "table" then Take(b) end end
+    for name, b in pairs(lib.objects) do
+      if type(b) == "table" then
+        if type(name) == "string" and rawget(b, "fxiKey") == nil then b.fxiKey = name end
+        Take(b)
+      end
+    end
   end
 end
 
@@ -317,9 +357,13 @@ Layout = function()
     local SLOT = Slot()
     local list = {}
     for b in pairs(buttons) do
-      if b:IsShown() then list[#list + 1] = b end
+      if IsHidden(b) then
+        if b:IsShown() then b.fxiPutAway = true; pcall(b.Hide, b) end
+      elseif b:IsShown() then
+        list[#list + 1] = b
+      end
     end
-    table.sort(list, function(a, b) return (a:GetName() or "~") < (b:GetName() or "~") end)
+    SortButtons(list)
     -- Everything is measured in the map window's own units, so the column
     -- is part of the map: it grows and shrinks with it (the map size
     -- slider and Edit Mode's size alike).
@@ -390,6 +434,211 @@ function M.CollectButtons()
   if not edge then return end
   Collect()
   Layout()
+end
+
+-- The options page list: every button the column has taken, in order,
+-- hidden ones included (they keep their place in the order).
+function M.ButtonList()
+  local list = {}
+  for b in pairs(buttons) do
+    if Key(b) then list[#list + 1] = b end
+  end
+  return SortButtons(list)
+end
+
+-- Move a button one place up (-1) or down (+1) and save the whole order.
+function M.MoveButton(b, dir)
+  local list = M.ButtonList()
+  for i, x in ipairs(list) do
+    if x == b then
+      local j = i + dir
+      if j >= 1 and j <= #list then list[i], list[j] = list[j], list[i] end
+      break
+    end
+  end
+  local order = {}
+  for i, x in ipairs(list) do order[i] = Key(x) end
+  ns.db.map.buttonOrder = order
+  if Layout then Layout() end
+end
+
+-- Drop a button at place n (drag and drop on the options list).
+function M.MoveButtonTo(b, n)
+  local list = M.ButtonList()
+  local from
+  for i, x in ipairs(list) do if x == b then from = i end end
+  if not from then return end
+  table.remove(list, from)
+  n = math.max(1, math.min(#list + 1, n))
+  table.insert(list, n, b)
+  local order = {}
+  for i, x in ipairs(list) do order[i] = Key(x) end
+  ns.db.map.buttonOrder = order
+  if Layout then Layout() end
+end
+
+function M.SetButtonHidden(b, hide)
+  local k = Key(b)
+  if not k then return end
+  ns.db.map.hiddenButtons[k] = hide and true or nil
+  -- Bring back only what we put away; the LFG eye shows itself when queued.
+  if not hide and b.fxiPutAway then
+    b.fxiPutAway = nil
+    if k ~= "QueueStatusButton" then pcall(b.Show, b) end
+  end
+  if Layout then Layout() end
+end
+
+local function ButtonIcon(b)
+  for _, key in ipairs({ "icon", "Icon" }) do
+    local t = rawget(b, key)
+    if type(t) == "table" and t.GetTexture then return t end
+  end
+  return b.GetNormalTexture and b:GetNormalTexture() or nil
+end
+
+-- Options page: one row per button, with up/down arrows and a Show tick.
+function M.Organizer(parent, width)
+  local list = M.ButtonList()
+  local ROW = 26
+  local f = CreateFrame("Frame", nil, parent)
+  f:SetSize(width, math.max(1, #list) * ROW + 4)
+  f.rows = {}
+  if #list == 0 then
+    local t = ns.Style.Text(f, 12)
+    t:SetPoint("TOPLEFT", 4, -4)
+    t:SetText("|cff7f8aa6No minimap buttons collected yet (is \"Minimap buttons along the map edge\" on?).|r")
+    return f, 30
+  end
+  local function Arrow(r, text, dir, x)
+    local a = CreateFrame("Button", nil, r, "UIPanelButtonTemplate")
+    a:SetSize(26, 20)
+    a:SetPoint("RIGHT", x, 0)
+    a:SetText(text)
+    a:SetScript("OnClick", function() M.MoveButton(r.button, dir); f.Refresh() end)
+    return a
+  end
+  -- Drag and drop: hold the left button on a row, move, let go on the
+  -- row whose place it should take. A bright line shows where it lands.
+  local drag, line
+  line = f:CreateTexture(nil, "OVERLAY")
+  line:SetHeight(2)
+  ns.Style.Fill(line, "accent", 1)
+  line:Hide()
+  local function Target()
+    for i, r in ipairs(f.rows) do
+      if r:IsShown() and r:IsMouseOver() then return i, r end
+    end
+  end
+  local function StopDrag(drop)
+    if not drag then return end
+    local from = drag
+    drag = nil
+    f:SetScript("OnUpdate", nil)
+    line:Hide()
+    for _, r in ipairs(f.rows) do r:SetAlpha(1) end
+    if drop then
+      local to = Target()
+      if to and to ~= from then M.MoveButtonTo(f.rows[from].button, to) end
+    end
+    f.Refresh()
+  end
+  for i = 1, #list do
+    local r = CreateFrame("Frame", nil, f)
+    r:EnableMouse(true)
+    r:SetScript("OnMouseDown", function(_, btn)
+      if btn ~= "LeftButton" then return end
+      drag = i
+      r:SetAlpha(0.5)
+      f:SetScript("OnUpdate", function()
+        if not IsMouseButtonDown("LeftButton") then StopDrag(true) return end
+        local to, tr = Target()
+        if to and to ~= drag then
+          line:ClearAllPoints()
+          local edgePt = to < drag and "TOP" or "BOTTOM"
+          line:SetPoint(edgePt .. "LEFT", tr, edgePt .. "LEFT", 0, 0)
+          line:SetPoint(edgePt .. "RIGHT", tr, edgePt .. "RIGHT", 0, 0)
+          line:Show()
+        else
+          line:Hide()
+        end
+      end)
+    end)
+    r:SetScript("OnMouseUp", function() StopDrag(true) end)
+    r:SetScript("OnEnter", function(self)
+      GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+      GameTooltip:AddLine(Label(self.button))
+      GameTooltip:AddLine("Drag to move it in the column.", 1, 1, 1)
+      GameTooltip:Show()
+    end)
+    r:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    r:SetSize(width - 8, ROW - 2)
+    r:SetPoint("TOPLEFT", 4, -2 - (i - 1) * ROW)
+    local bg = r:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    ns.Style.Fill(bg, "accent", (i % 2 == 0) and 0.06 or 0.12)
+    r.icon = r:CreateTexture(nil, "ARTWORK")
+    r.icon:SetSize(20, 20)
+    r.icon:SetPoint("LEFT", 4, 0)
+    r.num = ns.Style.Text(r, 11)
+    r.num:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
+    r.num:SetWidth(18)
+    r.label = ns.Style.Text(r, 12)
+    r.label:SetPoint("LEFT", r.num, "RIGHT", 2, 0)
+    r.label:SetWidth(width - 190)
+    r.label:SetJustifyH("LEFT")
+    r.down = Arrow(r, "v", 1, -4)
+    r.up = Arrow(r, "^", -1, -32)
+    local c = CreateFrame("CheckButton", nil, r)
+    c:SetSize(20, 20)
+    c:SetPoint("RIGHT", r.up, "LEFT", -40, 0)
+    c:SetNormalTexture("Interface\\Buttons\\UI-CheckBox-Up")
+    c:SetHighlightTexture("Interface\\Buttons\\UI-CheckBox-Highlight", "ADD")
+    c:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
+    local ct = ns.Style.Text(c, 11)
+    ct:SetPoint("LEFT", c, "RIGHT", 2, 0)
+    ct:SetText("Show")
+    c:SetScript("OnClick", function(self)
+      M.SetButtonHidden(r.button, not self:GetChecked())
+      f.Refresh()
+    end)
+    r.show = c
+    f.rows[i] = r
+  end
+  f.Refresh = function()
+    local now = M.ButtonList()
+    for i, r in ipairs(f.rows) do
+      local b = now[i]
+      r.button = b
+      if b then
+        r:Show()
+        local hidden = IsHidden(b)
+        r.num:SetText(i .. ".")
+        r.label:SetText(hidden and ("|cff7f8aa6" .. Label(b) .. "|r") or Label(b))
+        local tex = ButtonIcon(b)
+        local ok = false
+        if tex then
+          local atlas = tex.GetAtlas and tex:GetAtlas()
+          if atlas then ok = pcall(r.icon.SetAtlas, r.icon, atlas) end
+          if not ok then
+            local file = tex:GetTexture()
+            if file then ok = pcall(r.icon.SetTexture, r.icon, file) end
+          end
+        end
+        if not ok then r.icon:SetTexture(134400) end
+        r.icon:SetDesaturated(hidden)
+        r.show:SetChecked(not hidden)
+        r.up:SetEnabled(i > 1)
+        r.down:SetEnabled(i < #now)
+      else
+        r:Hide()
+      end
+    end
+  end
+  f:SetScript("OnShow", f.Refresh)
+  f:SetScript("OnHide", function() StopDrag(false) end)
+  f.Refresh()
+  return f, #list * ROW + 8
 end
 
 -- For /fxiui check and /fxiui map.

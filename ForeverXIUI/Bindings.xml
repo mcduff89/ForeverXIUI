@@ -1,0 +1,5 @@
+<Bindings>
+  <Binding name="FXIUI_RESTOCK_BUY" header="FOREVERXIUI" category="ADDONS">
+    ForeverXIUI_RestockBuy()
+  </Binding>
+</Bindings>

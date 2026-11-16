@@ -150,6 +150,11 @@ function M.Pages()
     C(db.map, "coords", "Coordinates under the map", "On the strip with the zone and clock."),
     C(db.map, "hideCalendar", "Hide the calendar button", "The calendar (date) button. Off: it sits with the other minimap buttons.", true),
     C(db.map, "hideDayNight", "Hide the day/night icon", "The sun/moon icon. Off: it sits just right of the bag counter on top of the map."),
+    H("Minimap buttons"),
+    { kind = "custom", build = function(parent, width)
+      local ms = ns.modules.MapSkin
+      if ms and ms.Organizer then return ms.Organizer(parent, width) end
+    end },
     H("Gold"),
     C(m, "gold", "Gold tracker", "Your gold on a strip on top of the minimap, with this session's change. Hover it for gold per hour and every character.", true),
     C(db.goldTracker, "onXP", "Gold under the EXP bar instead", "Puts the gold line back under the EXP bar.", true),
@@ -189,6 +194,9 @@ function M.Pages()
     H("Spell ranks"),
     C(db.ranks, "enabled", "Swap in new spell ranks", "After you train a higher rank, every button with a lower rank of that spell gets the new one. Waits for combat to end. To keep a low rank on purpose, put the mouse over its button and type /fxiui ranks keep."),
     C(db.ranks, "chat", "Say in chat when a rank is swapped"),
+    H("Macros"),
+    C(db.macros, "attack", "Attack macros (cast + auto attack)", "On login or /reload, makes a macro for each attack spell you know that doesn't have one yet, named +Spell (e.g. +Earth Shock): it starts auto attack and casts your highest rank. They're normal saved macros in /macro's character tab; drag them onto your bars. Delete or edit one and it's left that way. Your own macros are never touched."),
+    B("", "Make now", function() local mc = ns.modules.Macros; if mc then mc.Run(true, true) end end, "Makes any missing attack macros now (also ones you deleted) and resets any you edited. Also /fxiui macros."),
     B("Check every button now", "Update now", function() local r = ns.modules.Ranks if r then r.Run(true) end end),
     H("Menu"),
     C(db, "menuSkin", "XI menu", "Replaces Blizzard's menu bar with an XI window.", true),
@@ -226,6 +234,22 @@ function M.Pages()
       "Used when the % box is ticked. 50%: an item the vendor buys for 10s is junk unless the auction house (after its cut) pays more than 15s.", 0),
     B("Junk margin (gold/silver/copper)", "Set margin", function() local j = ns.modules.Junk; if j then j.EditMargin() end end,
       "Junk when the auction house (after its cut) beats the vendor by this or less. Also /fxiui junk."),
+    H("Limited-stock vendor items"),
+    C(db.restock, "enabled", "Track limited-stock items", "Vendors that stock only one or a few of an item (limited-supply recipes): logs what they have each visit and learns how long each item takes to come back."),
+    C(db.restock, "panel", "Limited stock window at vendors", "Beside the vendor: each limited item, how many are left, when it's due back, a star to want it and a Buy button."),
+    C(db.restock, "wantMine", "Want limited recipes for my professions", "Recipes for a profession you have that you don't know yet count as wanted."),
+    C(db.restock, "wantAll", "Want every limited recipe", "Every limited recipe counts as wanted, for selling or for a profession you'll pick up later. Unstar any you don't want."),
+    C(db.restock, "alert", "Alert when a wanted item is in stock", "Raid-warning sound and line, and the game's taskbar icon flashes."),
+    C(db.restock, "highlight", "Gold edge on wanted items", "On the vendor's item buttons. Grey while sold out."),
+    C(db.restock, "wheel", "Wheel buy", "While a vendor is open, one notch of the mouse wheel buys one wanted item that's in stock (one per notch, nothing on its own). Over the vendor window the wheel still turns pages. Also the switch on the Limited stock window."),
+    B("Buy key", "Key Bindings", function()
+      if Settings and Settings.OpenToCategory and Settings.KEYBINDINGS_CATEGORY_ID then
+        pcall(Settings.OpenToCategory, Settings.KEYBINDINGS_CATEGORY_ID)
+      end
+      ns.Print("set the buy key in Key Bindings > AddOns > ForeverXIUI.")
+    end, "One press buys one wanted item while a vendor is open. Set it in Key Bindings > AddOns > ForeverXIUI."),
+    B("Limited items seen", "Show list", function() local r = ns.modules.Restock; if r then r.Report() end end,
+      "Prints every limited recipe and starred item you've seen, soonest due first, with the vendor and coordinates. Also /fxiui restock."),
   })
 
   local function ChatLayout() if ns.ChatLayout then ns.ChatLayout() end end
@@ -247,6 +271,9 @@ function M.Pages()
     H("Totems and swing"),
     C(m, "totems", "Totem bar", "Your four totems with timers. Right-click one to take it down.", true),
     C(db.totems, "anyClass", "Totem bar on every class", "Off: shamans only.", true),
+    C(db.totems, "distance", "Distance to each totem", "Yards from where you dropped each totem, above its icon, red once you're past its range (20 yd; 30 for Tremor, Tranquil Air and the cleansing totems). Open world only: the game hides your position in dungeons and raids, where the red X still works."),
+    C(db.totems, "circle", "Totem range circle on the minimap", "A soft disc on the minimap around where your totems are, the size of their range. Step outside it and you're out of range. Open world only."),
+    C(db.totems, "range", "Mark totems out of range", "A totem whose buff you don't have turns red with an X. Only totems that give you a buff (Strength of Earth, Stoneskin, Grace of Air...), learned the first time you get each buff; Searing, Earthbind and the like never change."),
     C(m, "swing", "Swing timer", "A slim bar that fills from one melee swing to the next.", true),
     C(db.swing, "alwaysShow", "Keep the swing timer visible out of combat"),
     H("Buff reminder"),
@@ -335,6 +362,8 @@ local function Help()
   print("  /fxiui meter  - list what the damage meter is made of (to fit its skin)")
   print("  /fxiui plater - set Plater up to be easier to read again; /fxiui plater undo puts your old settings back")
   print("  /fxiui check  - test what Forever lets addons read (run it in combat too)")
+  print("  /fxiui restock  - limited-stock items you've seen, soonest due first; /fxiui restock forget clears the vendor log")
+  print("  /fxiui macros  - make the +Spell attack macros (cast + auto attack) now")
   print("  /fxiui ranks  - put your highest spell ranks on your buttons now; /fxiui ranks keep (mouse over a button) keeps that rank; /fxiui ranks check lists what the game reports")
 end
 
@@ -402,6 +431,13 @@ SlashCmdList.FOREVERXIUI = function(msg)
   elseif msg == "tidy" then
     local pr = ns.modules.Profile
     if pr then pr.RunTidy(true) end
+  elseif msg == "macros" then
+    local mc = ns.modules.Macros
+    if mc then mc.Run(true, true) end
+  elseif msg:match("^restock") then
+    local r = ns.modules.Restock
+    if not r then return end
+    if msg:match("forget$") then r.Forget() else r.Report() end
   elseif msg == "junk" then
     local j = ns.modules.Junk
     if j and j.EditMargin then j.EditMargin() end

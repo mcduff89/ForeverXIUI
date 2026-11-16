@@ -1,4 +1,4 @@
-# ForeverXIUI 1.4.19
+# ForeverXIUI 1.4.30
 
 An FFXI-style UI for WoW Forever, inspired by XIUI's look: navy windows with thin steel edges and clean bars, for the player, target, cast bars, party, raid, minimap, menu, EXP bar, bags and more. Everything can be moved, sized and switched off. Not affiliated with XIUI; no XIUI code or art is used.
 
@@ -42,6 +42,7 @@ Solo, out of combat:
 - **EXP bar** with rested, quest XP ready to hand in, XP per hour and time to level; **notifications** for loot, gold, XP and reputation; a **treasure pool** for group loot rolls.
 - **Shaman tools**: totem bar with timers, swing timer, Lightning Shield and weapon imbue reminders.
 - **Skins** for the chat windows, the built-in damage meter, Baganator bags and Plater nameplates (or ForeverXIUI's own nameplates).
+- **Limited-stock vendor items**: logs the one-at-a-time recipes each vendor has, learns how long they take to come back, alerts you when one you want is in stock and buys one per key press or wheel notch.
 - **Junk by Auctionator price** with a sell window at vendors that lets you untick anything first.
 - **Options window** (`/fxiui`) and **move mode** (`/fxiui move`): drag any frame, click it to jump to its options.
 - **Profiles**: save, load and share setups, including your Edit Mode layout. Starts with the built-in "Duff" profile.
@@ -68,6 +69,7 @@ Works on its own. Optional extras it skins or reads from: Baganator, Auctionator
 - `/fxiui meter` opens a copy box with what the damage meter is made of, so its skin can be fitted.
 - `/fxiui plater` sets Plater up to be easier to read again; `/fxiui plater undo` puts your old Plater settings back.
 - `/fxiui check` reports what Forever lets addons read. Run it out of combat and in combat with a mob targeted.
+- `/fxiui restock` lists the limited recipes and starred items you've seen, soonest due first, with the vendor and coordinates. `/fxiui restock forget` clears the vendor log.
 - `/fxiui ranks` puts your highest spell ranks on your buttons now (it also happens by itself after training). `/fxiui ranks keep` with the mouse over a button keeps that exact rank; again to undo. `/fxiui ranks check` opens a copy box with what the game reports about your ranks.
 
 ## Modules
@@ -91,12 +93,14 @@ Works on its own. Optional extras it skins or reads from: Baganator, Auctionator
 | Tooltip | Moves the game's tooltip off the party list to a spot you drag, or to the mouse |
 | Buff reminder | Lightning Shield or your weapon imbue, when missing or running out, right of your cast bar |
 | XI nameplates | Our own nameplates in the XI look, replacing Plater (turn Plater off to use them) |
+| Limited stock | At a vendor with limited-supply items: stock left, when each is due back, a star to want it, a Buy button. Wanted items get a gold edge, a sound and a warning line. A buy key (Key Bindings > AddOns) or Wheel buy buys one per press |
 | Chat skin | Navy window behind each chat frame, with its name top right. Combat log stacked on top of General at the same size and text size, like FFXI |
 
 ## Forever notes
 Health, power and other units' casts can be "secret" in combat. ForeverXIUI never does maths on them: it hands them to the bars and text directly and gets percentages and colours from the game's curve helpers. If something stays blank, run `/fxiui check` and compare the output.
 
 ## Changelog
+- 1.4.30 (2026-11-16): Limited-stock vendor items (Restock.lua, Bindings.xml). Logs each vendor's limited items every visit (and live while the window is open: MERCHANT_UPDATE plus a 2 s re-read), learns how long each takes to restock, marks wanted ones (your professions' unknown recipes, every limited recipe if ticked, or starred) with a gold edge, sound and warning line. Buy key in Key Bindings > AddOns > ForeverXIUI and an optional Wheel buy, one item per press, nothing bought on its own. Options under Bags & junk. Log saved in ForeverXIUIRestockDB, kept out of profiles.
 - 1.2.0 (2026-11-08): Renamed to ForeverXIUI. Folder, .toc, saved settings (ForeverXIUIDB), frame names and commands all change: /fxiui (and /foreverxiui) instead of /fxi. Bring old settings across with /fxi export in the old version, then /fxiui import. Delete the old AddOns\ForeverXI folder.
 - 1.2.1 (2026-11-08): Profile import no longer strips the spaces inside the Edit Mode part, so the Edit Mode layout in an export actually imports (1.2.0 squashed it). Old AddOns\ForeverXI is set to load on demand (archived, never loads).
 - 1.2.2 (2026-11-08): Blizzard frames options: "No Minimap and Bags boxes in Edit Mode" (on; also the micro menu box, which the XI menu replaces) makes their Edit Mode boxes invisible and click-through, and "Hide Blizzard boss frames" (off) fades the boss frames.
@@ -125,6 +129,16 @@ Health, power and other units' casts can be "secret" in combat. ForeverXIUI neve
 - 1.4.17 (2026-11-10): "Custom" window colours: pick your own window top, bottom, edge, titles and highlights with the game's colour picker (General page). Needs a /reload.
 - 1.4.18 (2026-11-10): /fxiui dump finds the window under the mouse even while typing in chat, shows its box above every window, and reports a problem instead of failing silently.
 - 1.4.19 (2026-11-10): spell ranks. After you train a higher rank, every action button with a lower rank of that spell gets the new one, once combat ends. `/fxiui ranks keep` with the mouse over a button keeps that exact rank (for downranking). On/off and "Update now" on the Action bars page. Untested in game.
+- 1.4.20 (2026-11-15): Minimap & gold page lists every minimap button with ^/v arrows to set its place in the column and a Show tick to put it away. Saved per account; no reload needed.
+- 1.4.21 (2026-11-15): minimap buttons list: drag a row and drop it on another to move it (the arrows still work).
+- 1.4.22 (2026-11-15): attack macros. On login/reload ForeverXIUI makes a character macro "+Spell" (#showtooltip, /startattack, /cast Spell) for each attack spell you know (Shaman: Earth/Flame/Frost Shock, Lightning Bolt, Chain Lightning, Stormstrike). Action bars page, /fxiui macros.
+- 1.4.23 (2026-11-15): full Shaman attack macro set (Lightning Bolt, Earth/Flame/Frost Shock, Chain Lightning, Stormstrike, Fire Nova, Purge, plus Lava Lash, Lava Burst, Primal Strike if Forever has them). Each is made when you learn the spell, no reload needed.
+- 1.4.24 (2026-11-15): Shaman utility macros: +Interrupt (Earth Shock, or Wind Shear if known, on your focus if you have a hostile one, else your target), +Purge now purges your mouseover enemy first, +Ghost Wolf toggles the form, +Ankh shows your Ankh count (click to print it).
+- 1.4.25 (2026-11-15): macros: a spell counts as known if it's in your spellbook by name too (Ghost Wolf's macro wasn't made), and /fxiui macros says which ones it skipped and why.
+- 1.4.26 (2026-11-15): dropped the +Ghost Wolf macro (the spell already toggles). An existing copy is left for you to delete.
+- 1.4.27 (2026-11-15): totem bar marks a totem out of range (red shade + X) when you don't have its buff. Learns which totems give a buff as you play; on by default (Totem bar option).
+- 1.4.28 (2026-11-15): yards to each totem above its icon on the totem bar, live, red past the totem's range. Open world only (no position in dungeons/raids). Totemic Call resets the spot.
+- 1.4.29 (2026-11-15): the totem X follows the distance when there is one (it stayed after Totemic Call); the buff check only decides in dungeons and raids. New: a range circle on the minimap around your totems (open world only; Totem bar option).
 - 1.1.2 (2026-11-08): The quest tracker now swaps with Polestar's guide window: hidden while PolestarGuideFrame is showing, back when it isn't (dungeons, or Polestar closed). Changes wait until out of combat.
 - 1.1.1 (2026-11-08): Blizzard's quest/objective tracker is hidden while Polestar is loaded (Blizzard frames: "Hide Blizzard quest tracker while Polestar is on"). Hidden out of combat and again whenever the game shows it.
 - 1.1.0 (2026-11-08): Profile.lua (new): profile export/import. One line of text with every ForeverXIUI setting (sizes, positions, options) and the active Edit Mode layout. Import replaces the settings (keeps this PC's gold totals), adds the Edit Mode layout as a new account layout "FXI <date>" and makes it active, then reloads. /fxiui export, /fxiui import, or the buttons on the main options page.
